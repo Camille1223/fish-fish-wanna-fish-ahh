@@ -10,11 +10,11 @@
   #gameCanvas { display: block; cursor: crosshair; }
   #ui { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 900px; pointer-events: none; }
   .hud { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; }
-  .hud-item { background: rgba(0,0,30,0.7); border: 1px solid rgba(100,200,255,0.4); border-radius: 8px; padding: 6px 12px; color: #7ef; font-size: 13px; }
+  .hud-item { background: rgba(0,5,20,0.82); border: 1px solid rgba(100,200,255,0.5); border-radius: 10px; padding: 6px 14px; color: #9ef; font-size: 13px; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,100,200,0.3), inset 0 1px 0 rgba(255,255,255,0.08); }
   .oxygen-bar { width: 120px; height: 12px; background: rgba(0,0,0,0.5); border-radius: 6px; overflow: hidden; border: 1px solid rgba(100,200,255,0.4); }
-  .oxygen-fill { height: 100%; background: linear-gradient(90deg, #00aaff, #00ffcc); border-radius: 6px; transition: width 0.3s; }
-  #msgBox { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(0,0,50,0.9); border: 2px solid #7ef; border-radius: 12px; padding: 10px 24px; color: #fff; font-size: 16px; display: none; text-align: center; pointer-events: none; }
-  #sharkHint { position: absolute; top: 90px; left: 50%; transform: translateX(-50%); color: #ff4; font-size: 14px; font-weight: bold; display: none; text-shadow: 0 0 8px #fa0; pointer-events: none; }
+  .oxygen-fill { height: 100%; background: linear-gradient(90deg, #00aaff, #00ffcc); border-radius: 6px; transition: width 0.3s; box-shadow: 0 0 6px #0af; }
+  #msgBox { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(0,5,30,0.92); border: 1px solid rgba(100,220,255,0.6); border-radius: 14px; padding: 10px 28px; color: #fff; font-size: 16px; display: none; text-align: center; pointer-events: none; box-shadow: 0 4px 20px rgba(0,150,255,0.4), inset 0 1px 0 rgba(255,255,255,0.1); }
+  #sharkHint { position: absolute; top: 90px; left: 50%; transform: translateX(-50%); color: #ff4; font-size: 14px; font-weight: bold; display: none; text-shadow: 0 0 12px #fa0, 0 0 4px #f80; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -159,58 +159,160 @@ function spawnBubble(x, y) {
 // ============ DRAW FUNCTIONS ============
 function drawBackground() {
   const z = ZONES[GS.zone];
-  const darkMult = GS.weather === 'dark' ? 0.4 : 1.0;
+  const darkMult = GS.weather === 'dark' ? 0.35 : 1.0;
+
+  // === 多层景深背景 ===
+  // 最远层 - 深色底色
   const grad = ctx.createLinearGradient(0, 0, 0, 600);
   grad.addColorStop(0, shadeColor(z.bgTop, darkMult));
+  grad.addColorStop(0.5, shadeColor(z.bgTop, darkMult * 0.75));
   grad.addColorStop(1, shadeColor(z.bgBot, darkMult));
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 900, 600);
 
-  // Light rays in shallow zone
-  if (GS.zone === 0 && GS.weather !== 'dark') {
+  // 中远景雾化层 - 模拟水体散射
+  if (GS.zone < 2) {
+    const hazeGrad = ctx.createRadialGradient(450, 0, 50, 450, 0, 700);
+    hazeGrad.addColorStop(0, 'rgba(100,200,255,0.06)');
+    hazeGrad.addColorStop(1, 'rgba(0,50,120,0)');
+    ctx.fillStyle = hazeGrad;
+    ctx.fillRect(0, 0, 900, 600);
+  }
+
+  // === 体积光射线 (浅海/珊瑚礁) ===
+  if (GS.zone <= 1 && GS.weather !== 'dark') {
     ctx.save();
-    for (let i = 0; i < 5; i++) {
-      const rx = 100 + i * 180 + Math.sin(GS.time * 0.5 + i) * 20;
-      const grad2 = ctx.createLinearGradient(rx, 0, rx + 40, 600);
-      grad2.addColorStop(0, 'rgba(255,255,255,0.04)');
-      grad2.addColorStop(1, 'rgba(255,255,255,0)');
+    const rayCount = GS.zone === 0 ? 7 : 4;
+    const rayAlpha = GS.zone === 0 ? 0.07 : 0.04;
+    for (let i = 0; i < rayCount; i++) {
+      const rx = 80 + i * 130 + Math.sin(GS.time * 0.4 + i * 1.3) * 30;
+      const rayWidth = 40 + Math.sin(GS.time * 0.3 + i) * 15;
+      const grad2 = ctx.createLinearGradient(rx, 0, rx, 600);
+      grad2.addColorStop(0, `rgba(180,240,255,${rayAlpha})`);
+      grad2.addColorStop(0.4, `rgba(120,200,255,${rayAlpha * 0.5})`);
+      grad2.addColorStop(1, 'rgba(0,100,200,0)');
       ctx.fillStyle = grad2;
       ctx.beginPath();
-      ctx.moveTo(rx, 0);
-      ctx.lineTo(rx + 50, 600);
-      ctx.lineTo(rx - 10, 600);
+      ctx.moveTo(rx - rayWidth * 0.3, 0);
+      ctx.lineTo(rx + rayWidth + Math.sin(GS.time * 0.2 + i) * 20, 600);
+      ctx.lineTo(rx - rayWidth * 0.5 + Math.sin(GS.time * 0.2 + i) * 20, 600);
+      ctx.lineTo(rx - rayWidth * 0.6, 0);
       ctx.closePath();
       ctx.fill();
     }
     ctx.restore();
   }
 
-  // Current indicator
-  if (GS.weather === 'current') {
+  // === 水面焦散纹理 (浅海) ===
+  if (GS.zone === 0 && GS.weather !== 'dark') {
     ctx.save();
-    ctx.fillStyle = 'rgba(100,200,255,0.12)';
-    for (let i = 0; i < 8; i++) {
-      const cx = ((GS.time * 80 + i * 120) % 1100) - 100;
-      const cy = 100 + i * 60;
-      ctx.font = '28px serif';
-      ctx.fillText('〜', cx, cy);
+    ctx.globalAlpha = 0.04;
+    for (let i = 0; i < 12; i++) {
+      const cx = ((GS.time * 25 + i * 80) % 1000) - 50;
+      const cy = 30 + (i % 4) * 60 + Math.sin(GS.time + i) * 15;
+      const r = 20 + Math.sin(GS.time * 0.7 + i) * 8;
+      const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      cg.addColorStop(0, 'rgba(200,240,255,0.8)');
+      cg.addColorStop(1, 'rgba(100,180,255,0)');
+      ctx.fillStyle = cg;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, r, r * 0.5, GS.time * 0.1 + i, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  // === 深海发光浮游生物 ===
+  if (GS.zone === 2) {
+    ctx.save();
+    for (let i = 0; i < 15; i++) {
+      const px = (Math.sin(i * 2.3 + GS.time * 0.1) * 0.5 + 0.5) * 900;
+      const py = (Math.sin(i * 1.7 + GS.time * 0.08) * 0.5 + 0.5) * 500 + 30;
+      const pr = 2 + Math.sin(GS.time * 2 + i) * 1;
+      const glow = ctx.createRadialGradient(px, py, 0, px, py, pr * 4);
+      const hue = (i * 40 + GS.time * 20) % 360;
+      glow.addColorStop(0, `hsla(${hue},100%,80%,0.6)`);
+      glow.addColorStop(1, `hsla(${hue},100%,60%,0)`);
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(px, py, pr * 4, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
   }
 
-  // Sand bottom
-  const sandGrad = ctx.createLinearGradient(0, 555, 0, 600);
-  sandGrad.addColorStop(0, GS.zone === 2 ? '#111a22' : '#c8a060');
-  sandGrad.addColorStop(1, GS.zone === 2 ? '#080e14' : '#a07840');
-  ctx.fillStyle = sandGrad;
+  // === 洋流视觉效果 ===
+  if (GS.weather === 'current') {
+    ctx.save();
+    for (let i = 0; i < 6; i++) {
+      const cx = ((GS.time * 90 + i * 160) % 1200) - 100;
+      const cy = 80 + i * 80 + Math.sin(i * 1.2) * 30;
+      const cg = ctx.createLinearGradient(cx - 20, cy, cx + 80, cy);
+      cg.addColorStop(0, 'rgba(100,200,255,0)');
+      cg.addColorStop(0.3, 'rgba(150,220,255,0.15)');
+      cg.addColorStop(1, 'rgba(100,200,255,0)');
+      ctx.fillStyle = cg;
+      ctx.beginPath();
+      ctx.ellipse(cx + 30, cy, 60, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // === 3D 沙底 — 多层起伏 + 法线光照 ===
+  const isDeep = GS.zone === 2;
+  // 阴影层(最低)
+  ctx.save();
+  ctx.fillStyle = isDeep ? 'rgba(0,0,0,0.6)' : 'rgba(80,50,10,0.35)';
   ctx.beginPath();
-  ctx.moveTo(0, 580);
-  for (let x = 0; x <= 900; x += 30) {
-    ctx.lineTo(x, 565 + Math.sin(x * 0.05 + GS.time * 0.2) * 8);
+  ctx.moveTo(0, 600);
+  for (let x = 0; x <= 900; x += 20) {
+    ctx.lineTo(x, 572 + Math.sin(x * 0.04 + GS.time * 0.15) * 6 + 4);
   }
   ctx.lineTo(900, 600); ctx.lineTo(0, 600);
   ctx.closePath();
   ctx.fill();
+
+  // 主沙面
+  const sandGrad = ctx.createLinearGradient(0, 555, 0, 600);
+  if (isDeep) {
+    sandGrad.addColorStop(0, '#0e1e2c');
+    sandGrad.addColorStop(0.5, '#0a1520');
+    sandGrad.addColorStop(1, '#060c14');
+  } else if (GS.zone === 1) {
+    sandGrad.addColorStop(0, '#b89050');
+    sandGrad.addColorStop(0.5, '#9a7838');
+    sandGrad.addColorStop(1, '#806030');
+  } else {
+    sandGrad.addColorStop(0, '#d4b070');
+    sandGrad.addColorStop(0.5, '#c09050');
+    sandGrad.addColorStop(1, '#a07838');
+  }
+  ctx.fillStyle = sandGrad;
+  ctx.beginPath();
+  ctx.moveTo(0, 600);
+  for (let x = 0; x <= 900; x += 20) {
+    ctx.lineTo(x, 568 + Math.sin(x * 0.04 + GS.time * 0.15) * 6);
+  }
+  ctx.lineTo(900, 600); ctx.lineTo(0, 600);
+  ctx.closePath();
+  ctx.fill();
+
+  // 沙纹高光层
+  if (!isDeep) {
+    ctx.strokeStyle = 'rgba(255,220,130,0.25)';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 5; i++) {
+      ctx.beginPath();
+      for (let x = 0; x <= 900; x += 20) {
+        const y = 570 + i * 4 + Math.sin(x * 0.04 + GS.time * 0.15 + i * 0.5) * 4;
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
 }
 
 function shadeColor(hex, mult) {
@@ -219,198 +321,401 @@ function shadeColor(hex, mult) {
 }
 
 function drawDecorations() {
+  // 先画阴影层，再画实体（增加3D景深感）
+  for (const d of decorations) {
+    if (d.type === 'rock') {
+      // 地面阴影
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(d.x + 6, d.y + 8, d.size * 1.1, d.size * 0.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
   for (const d of decorations) {
     if (d.type === 'seaweed') {
-      const sway = Math.sin(GS.time * 1.5 + d.phase) * 10;
-      ctx.strokeStyle = d.color;
+      const sway = Math.sin(GS.time * 1.5 + d.phase) * 12;
+      const sway2 = Math.sin(GS.time * 1.2 + d.phase + 1) * 6;
+      // 阴影茎
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(d.x + 2, d.y);
+      ctx.bezierCurveTo(d.x + sway * 0.5 + 2, d.y - d.height * 0.35, d.x + sway + 2, d.y - d.height * 0.65, d.x + sway * 1.4 + 2, d.y - d.height);
+      ctx.stroke();
+      // 主茎(粗)
+      const swGrad = ctx.createLinearGradient(d.x, d.y, d.x + sway * 1.4, d.y - d.height);
+      swGrad.addColorStop(0, d.color);
+      swGrad.addColorStop(1, GS.zone === 2 ? '#2a6a3a' : '#50c870');
+      ctx.strokeStyle = swGrad;
       ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
       ctx.beginPath();
       ctx.moveTo(d.x, d.y);
-      ctx.quadraticCurveTo(d.x + sway, d.y - d.height * 0.5, d.x + sway * 1.5, d.y - d.height);
+      ctx.bezierCurveTo(d.x + sway * 0.5, d.y - d.height * 0.35, d.x + sway, d.y - d.height * 0.65, d.x + sway * 1.4, d.y - d.height);
       ctx.stroke();
+      // 高光茎
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(d.x + 1, d.y);
+      ctx.bezierCurveTo(d.x + sway * 0.5 + 1, d.y - d.height * 0.35, d.x + sway + 1, d.y - d.height * 0.65, d.x + sway * 1.4 + 1, d.y - d.height);
+      ctx.stroke();
+      // 叶片
+      for (let j = 0.25; j <= 0.85; j += 0.3) {
+        const lx = d.x + sway * j * 1.4;
+        const ly = d.y - d.height * j;
+        const la = Math.sin(GS.time * 1.8 + d.phase + j * 3) * 0.4;
+        ctx.save();
+        ctx.translate(lx, ly);
+        ctx.rotate(la + (j > 0.5 ? 0.3 : -0.3));
+        const lGrad = ctx.createLinearGradient(-10, 0, 10, 0);
+        lGrad.addColorStop(0, GS.zone === 2 ? '#1a5a2a' : '#30a850');
+        lGrad.addColorStop(0.5, GS.zone === 2 ? '#2a7a3a' : '#50d870');
+        lGrad.addColorStop(1, 'rgba(0,100,40,0)');
+        ctx.fillStyle = lGrad;
+        ctx.beginPath();
+        ctx.ellipse(8, 0, 14, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
     } else if (d.type === 'coral') {
-      ctx.fillStyle = d.color;
-      ctx.beginPath();
-      ctx.arc(d.x, d.y, d.size * 0.4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = d.color;
-      ctx.beginPath();
-      ctx.arc(d.x - d.size * 0.4, d.y + 5, d.size * 0.3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(d.x + d.size * 0.4, d.y + 8, d.size * 0.25, 0, Math.PI * 2);
-      ctx.fill();
+      // 立体珊瑚 - 圆柱底座 + 球形顶端
+      const branches = [
+        { ox: 0, oy: 0, r: d.size * 0.42, h: d.size * 0.6 },
+        { ox: -d.size * 0.45, oy: 5, r: d.size * 0.3, h: d.size * 0.45 },
+        { ox: d.size * 0.42, oy: 8, r: d.size * 0.25, h: d.size * 0.38 }
+      ];
+      for (const b of branches) {
+        const bx = d.x + b.ox, by = d.y;
+        // 茎阴影
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.ellipse(bx + 3, by + 3, b.r * 0.5, b.r * 0.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // 茎(圆柱侧面)
+        const stemGrad = ctx.createLinearGradient(bx - b.r * 0.5, 0, bx + b.r * 0.5, 0);
+        stemGrad.addColorStop(0, shadeColor(d.color, 0.55));
+        stemGrad.addColorStop(0.35, d.color);
+        stemGrad.addColorStop(0.6, shadeColor(d.color, 1.3));
+        stemGrad.addColorStop(1, shadeColor(d.color, 0.7));
+        ctx.fillStyle = stemGrad;
+        ctx.beginPath();
+        ctx.rect(bx - b.r * 0.4, by - b.h, b.r * 0.8, b.h);
+        ctx.fill();
+        // 顶端球
+        const ballGrad = ctx.createRadialGradient(bx - b.r * 0.25, by - b.h - b.r * 0.3, b.r * 0.05, bx, by - b.h, b.r);
+        ballGrad.addColorStop(0, shadeColor(d.color, 1.6));
+        ballGrad.addColorStop(0.4, d.color);
+        ballGrad.addColorStop(1, shadeColor(d.color, 0.5));
+        ctx.fillStyle = ballGrad;
+        ctx.beginPath();
+        ctx.arc(bx, by - b.h, b.r, 0, Math.PI * 2);
+        ctx.fill();
+        // 顶端高光
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.beginPath();
+        ctx.arc(bx - b.r * 0.3, by - b.h - b.r * 0.3, b.r * 0.25, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
     } else if (d.type === 'rock') {
-      ctx.fillStyle = d.color;
+      // 立体岩石 - 多层椭圆 + 法线光照
+      // 暗面
+      const rockDark = ctx.createRadialGradient(d.x + d.size * 0.3, d.y + d.size * 0.1, 0, d.x, d.y - d.size * 0.2, d.size * 1.2);
+      rockDark.addColorStop(0, '#667788');
+      rockDark.addColorStop(0.5, d.color);
+      rockDark.addColorStop(1, '#223344');
+      ctx.fillStyle = rockDark;
       ctx.beginPath();
-      ctx.ellipse(d.x, d.y, d.size, d.size * 0.6, 0, 0, Math.PI * 2);
+      ctx.ellipse(d.x, d.y, d.size, d.size * 0.62, -0.1, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#556677';
+      // 高光面
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
       ctx.beginPath();
-      ctx.ellipse(d.x - 5, d.y - 5, d.size * 0.5, d.size * 0.3, -0.3, 0, Math.PI * 2);
+      ctx.ellipse(d.x - d.size * 0.2, d.y - d.size * 0.2, d.size * 0.55, d.size * 0.28, -0.4, 0, Math.PI * 2);
       ctx.fill();
+      // 顶部亮斑
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.beginPath();
+      ctx.ellipse(d.x - d.size * 0.15, d.y - d.size * 0.28, d.size * 0.2, d.size * 0.1, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+      // 裂缝细节
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(d.x - d.size * 0.1, d.y - d.size * 0.15);
+      ctx.lineTo(d.x + d.size * 0.2, d.y + d.size * 0.05);
+      ctx.stroke();
     }
   }
 }
 
 function drawFish(f) {
+  // 地面阴影
+  if (f.y > 400) {
+    const shadowAlpha = Math.max(0, (f.y - 400) / 200) * 0.35;
+    ctx.save();
+    ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
+    ctx.beginPath();
+    ctx.ellipse(f.x, 572 + Math.sin(f.x * 0.04 + GS.time * 0.15) * 6, f.size * 1.1, f.size * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   ctx.save();
   ctx.translate(f.x, f.y);
   const scaleX = f.vx < 0 ? -1 : 1;
   ctx.scale(scaleX, 1);
 
-  // wobble for puffer
   const wobbleScale = f.wobble ? 1 + Math.sin(GS.time * 3 + f.phase) * 0.15 : 1;
   ctx.scale(wobbleScale, 1 / wobbleScale);
 
   const w = f.size, h = f.size * 0.6;
 
-  // Shark - special draw
   if (f.type === 'shark') {
-    ctx.fillStyle = f.scared ? '#aab' : f.bodyColor;
-    // body
+    const sharkCol = f.scared ? '#99aaaa' : f.bodyColor;
+    // 身体底色阴影
+    ctx.fillStyle = shadeColor(sharkCol, 0.5);
+    ctx.beginPath();
+    ctx.ellipse(2, 2, w, h, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // 身体主渐变(球面光照)
+    const sg = ctx.createRadialGradient(-w * 0.3, -h * 0.4, w * 0.05, 0, 0, w * 1.1);
+    sg.addColorStop(0, shadeColor(sharkCol, 1.5));
+    sg.addColorStop(0.45, sharkCol);
+    sg.addColorStop(1, shadeColor(sharkCol, 0.55));
+    ctx.fillStyle = sg;
     ctx.beginPath();
     ctx.ellipse(0, 0, w, h, 0, 0, Math.PI * 2);
     ctx.fill();
-    // fin
-    ctx.fillStyle = f.scared ? '#889' : f.color;
+    // 腹部浅色
+    ctx.fillStyle = 'rgba(230,240,245,0.5)';
     ctx.beginPath();
-    ctx.moveTo(-5, -h);
-    ctx.lineTo(10, -h - 18);
-    ctx.lineTo(20, -h);
+    ctx.ellipse(w * 0.15, h * 0.3, w * 0.55, h * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // 背鳍
+    const finG = ctx.createLinearGradient(-5, -h, 20, -h - 20);
+    finG.addColorStop(0, shadeColor(f.scared ? '#778899' : f.color, 0.8));
+    finG.addColorStop(1, shadeColor(f.scared ? '#778899' : f.color, 1.2));
+    ctx.fillStyle = finG;
+    ctx.beginPath();
+    ctx.moveTo(-5, -h + 2);
+    ctx.lineTo(12, -h - 20);
+    ctx.lineTo(22, -h + 2);
     ctx.closePath();
     ctx.fill();
-    // tail
+    // 尾鳍
+    ctx.fillStyle = f.scared ? '#889aaa' : f.color;
     ctx.beginPath();
     ctx.moveTo(-w, 0);
-    ctx.lineTo(-w - 15, -12);
-    ctx.lineTo(-w - 15, 12);
+    ctx.lineTo(-w - 16, -13);
+    ctx.lineTo(-w - 16, 13);
     ctx.closePath();
     ctx.fill();
-    // eye
-    ctx.fillStyle = '#000';
+    // 眼睛(高光)
+    ctx.fillStyle = '#111';
     ctx.beginPath();
-    ctx.arc(w * 0.4, -3, 4, 0, Math.PI * 2);
+    ctx.arc(w * 0.42, -4, 5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
     ctx.beginPath();
-    ctx.arc(w * 0.4 + 1, -4, 1.5, 0, Math.PI * 2);
+    ctx.arc(w * 0.42 + 1.5, -5.5, 2, 0, Math.PI * 2);
     ctx.fill();
-    // teeth
-    ctx.fillStyle = '#fff';
+    // 牙齿
+    ctx.fillStyle = '#eee';
     ctx.beginPath();
-    ctx.moveTo(w * 0.7, 3);
-    ctx.lineTo(w * 0.8, 8);
-    ctx.lineTo(w * 0.9, 3);
+    ctx.moveTo(w * 0.68, 4);
+    ctx.lineTo(w * 0.78, 10);
+    ctx.lineTo(w * 0.88, 4);
     ctx.fill();
-    // HP bar for shark
+    // HP条
     if (f.hp < f.maxHp) {
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fillRect(-w, h + 4, w * 2, 6);
-      ctx.fillStyle = '#f44';
-      ctx.fillRect(-w, h + 4, w * 2 * (f.hp / f.maxHp), 6);
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(-w, h + 5, w * 2, 7);
+      ctx.fillStyle = '#f33';
+      ctx.fillRect(-w, h + 5, w * 2 * (f.hp / f.maxHp), 7);
+      ctx.fillStyle = 'rgba(255,100,100,0.3)';
+      ctx.fillRect(-w, h + 5, w * 2 * (f.hp / f.maxHp), 3);
     }
+
   } else if (f.type === 'crab') {
-    // crab body
-    ctx.fillStyle = f.bodyColor;
+    // 螃蟹 - 立体甲壳
+    const cg = ctx.createRadialGradient(-w * 0.3, -h * 0.4, h * 0.1, 0, 0, w);
+    cg.addColorStop(0, shadeColor(f.bodyColor, 1.5));
+    cg.addColorStop(0.5, f.bodyColor);
+    cg.addColorStop(1, shadeColor(f.bodyColor, 0.55));
+    ctx.fillStyle = cg;
     ctx.beginPath();
     ctx.ellipse(0, 0, w, h, 0, 0, Math.PI * 2);
     ctx.fill();
-    // claws
-    ctx.fillStyle = f.color;
+    // 甲壳高光
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
     ctx.beginPath();
-    ctx.arc(-w - 5, -5, 8, 0, Math.PI * 2);
+    ctx.ellipse(-w * 0.2, -h * 0.35, w * 0.4, h * 0.25, -0.3, 0, Math.PI * 2);
     ctx.fill();
-    ctx.beginPath();
-    ctx.arc(w + 5, -5, 8, 0, Math.PI * 2);
-    ctx.fill();
-    // legs
-    for (let i = -1; i <= 1; i += 1) {
-      ctx.strokeStyle = f.color;
-      ctx.lineWidth = 2;
+    // 蟹钳(立体)
+    for (const side of [-1, 1]) {
+      const cx = side * (w + 5);
+      const clawG = ctx.createRadialGradient(cx - 2, -7, 1, cx, -5, 10);
+      clawG.addColorStop(0, shadeColor(f.color, 1.4));
+      clawG.addColorStop(1, shadeColor(f.color, 0.7));
+      ctx.fillStyle = clawG;
+      ctx.beginPath();
+      ctx.arc(cx, -5, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.beginPath();
+      ctx.arc(cx - 2, -7, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // 蟹腿
+    for (let i = -1; i <= 1; i++) {
+      ctx.strokeStyle = shadeColor(f.color, 0.9);
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
       ctx.beginPath();
       ctx.moveTo(i * 10, h);
-      ctx.lineTo(i * 14, h + 12);
+      ctx.lineTo(i * 15 + Math.sin(GS.time * 4 + i) * 3, h + 13);
       ctx.stroke();
     }
-    // eyes
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.arc(-8, -5, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(8, -5, 4, 0, Math.PI * 2);
-    ctx.fill();
+    // 眼睛
+    for (const ex of [-8, 8]) {
+      ctx.fillStyle = '#111';
+      ctx.beginPath();
+      ctx.arc(ex, -5, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.beginPath();
+      ctx.arc(ex + 1, -6.5, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
   } else {
-    // Generic fish body
-    ctx.fillStyle = f.bodyColor;
+    // 通用鱼 - 球面光照身体
+    const fishG = ctx.createRadialGradient(-w * 0.25, -h * 0.4, h * 0.05, 0, 0, w * 1.05);
+    fishG.addColorStop(0, shadeColor(f.bodyColor, 1.6));
+    fishG.addColorStop(0.4, f.bodyColor);
+    fishG.addColorStop(1, shadeColor(f.bodyColor, 0.5));
+    ctx.fillStyle = fishG;
     ctx.beginPath();
     ctx.ellipse(0, 0, w, h, 0, 0, Math.PI * 2);
     ctx.fill();
-    // Fin
-    ctx.fillStyle = f.color;
+
+    // 鱼鳞光泽纹
+    ctx.save();
+    ctx.clip();
+    ctx.globalAlpha = 0.12;
+    for (let sx = -w + 5; sx < w; sx += 7) {
+      for (let sy = -h + 3; sy < h; sy += 6) {
+        ctx.fillStyle = (Math.floor(sx / 7 + sy / 6) % 2 === 0) ? '#fff' : shadeColor(f.bodyColor, 0.7);
+        ctx.beginPath();
+        ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // 腹部
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.beginPath();
-    ctx.moveTo(-2, -h);
-    ctx.lineTo(6, -h - 10);
-    ctx.lineTo(14, -h);
+    ctx.ellipse(w * 0.1, h * 0.28, w * 0.45, h * 0.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 背鳍
+    const finG = ctx.createLinearGradient(0, -h, 14, -h - 12);
+    finG.addColorStop(0, shadeColor(f.color, 0.9));
+    finG.addColorStop(1, shadeColor(f.color, 1.3));
+    ctx.fillStyle = finG;
+    ctx.beginPath();
+    ctx.moveTo(-2, -h + 1);
+    ctx.lineTo(7, -h - 11);
+    ctx.lineTo(15, -h + 1);
     ctx.closePath();
     ctx.fill();
-    // Tail
+
+    // 尾鳍
+    ctx.fillStyle = shadeColor(f.color, 1.1);
     ctx.beginPath();
-    ctx.moveTo(-w, 0);
-    ctx.lineTo(-w - 10, -8);
-    ctx.lineTo(-w - 10, 8);
+    ctx.moveTo(-w + 1, 0);
+    ctx.lineTo(-w - 11, -9);
+    ctx.lineTo(-w - 11, 9);
     ctx.closePath();
     ctx.fill();
-    // Eye
+
+    // 眼睛
     ctx.fillStyle = '#fff';
     ctx.beginPath();
-    ctx.arc(w * 0.5, -2, 4, 0, Math.PI * 2);
+    ctx.arc(w * 0.5, -2, 5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#000';
+    ctx.fillStyle = '#111';
     ctx.beginPath();
-    ctx.arc(w * 0.5 + 1, -2, 2.5, 0, Math.PI * 2);
+    ctx.arc(w * 0.5 + 0.5, -2, 3, 0, Math.PI * 2);
     ctx.fill();
-    // Stripe for clownfish
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(w * 0.5 + 1, -3.5, 1.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 小丑鱼白条纹
     if (f.type === 'clownfish') {
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.moveTo(0, -h); ctx.lineTo(0, h);
+      ctx.moveTo(0, -h + 1); ctx.lineTo(0, h - 1);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.3, -h * 0.8); ctx.lineTo(-w * 0.3, h * 0.8);
       ctx.stroke();
     }
-    // Spikes for puffer
+
+    // 河豚棘刺
     if (f.type === 'puffer') {
-      for (let a = 0; a < Math.PI * 2; a += 0.7) {
-        ctx.strokeStyle = '#9a0';
-        ctx.lineWidth = 1.5;
+      ctx.strokeStyle = shadeColor(f.color, 0.7);
+      ctx.lineWidth = 1.8;
+      for (let a = 0; a < Math.PI * 2; a += 0.65) {
+        const sx = Math.cos(a) * w, sy = Math.sin(a) * h;
         ctx.beginPath();
-        ctx.moveTo(Math.cos(a) * w, Math.sin(a) * h);
-        ctx.lineTo(Math.cos(a) * (w + 5), Math.sin(a) * (h + 5));
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(Math.cos(a) * (w + 6), Math.sin(a) * (h + 6));
         ctx.stroke();
       }
     }
-    // Salmon stripe
+
+    // 三文鱼侧线
     if (f.type === 'salmon') {
-      ctx.strokeStyle = '#ff8060';
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(255,130,80,0.7)';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.moveTo(-w * 0.6, 0);
-      ctx.lineTo(w * 0.6, 0);
+      ctx.moveTo(-w * 0.55, 0);
+      ctx.quadraticCurveTo(0, h * 0.15, w * 0.55, 0);
       ctx.stroke();
     }
   }
   ctx.restore();
 
-  // catch progress dots for multi-click fish
+  // 多击进度指示
   if (f.maxHp > 1) {
     const sc = sharkClickState[f.id];
     if (sc && sc.count > 0) {
       for (let i = 0; i < f.maxHp; i++) {
+        const dotX = f.x - 10 + i * 13;
+        const dotY = f.y - f.size - 16;
         ctx.beginPath();
-        ctx.arc(f.x - 10 + i * 12, f.y - f.size - 14, 5, 0, Math.PI * 2);
-        ctx.fillStyle = i < sc.count ? '#ff4' : 'rgba(255,255,255,0.3)';
+        ctx.arc(dotX, dotY, 6, 0, Math.PI * 2);
+        ctx.fillStyle = i < sc.count ? '#ff4' : 'rgba(255,255,255,0.25)';
         ctx.fill();
+        if (i < sc.count) {
+          ctx.strokeStyle = 'rgba(255,200,0,0.6)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
       }
     }
   }
@@ -422,205 +727,355 @@ function drawDiver() {
   ctx.translate(d.x, d.y);
   ctx.scale(d.dir, 1);
 
-  // swim bob
   const bob = Math.sin(GS.time * 2) * 3;
 
-  // Oxygen tank (back)
-  ctx.fillStyle = '#888';
+  // 地面投影
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
   ctx.beginPath();
-  ctx.roundRect(-28, -20 + bob, 16, 34, 5);
+  ctx.ellipse(0, 50, 28, 8, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = '#aaa';
+
+  // 氧气罐(金属质感)
+  const tankG = ctx.createLinearGradient(-30, 0, -10, 0);
+  tankG.addColorStop(0, '#555');
+  tankG.addColorStop(0.3, '#999');
+  tankG.addColorStop(0.6, '#bbb');
+  tankG.addColorStop(1, '#666');
+  ctx.fillStyle = tankG;
   ctx.beginPath();
-  ctx.roundRect(-26, -18 + bob, 12, 20, 3);
+  ctx.roundRect(-28, -20 + bob, 16, 34, 6);
   ctx.fill();
-  ctx.strokeStyle = '#666';
-  ctx.lineWidth = 2;
+  // 罐身高光
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.beginPath();
+  ctx.roundRect(-26, -18 + bob, 5, 18, 3);
+  ctx.fill();
+  // 气管
+  ctx.strokeStyle = '#f80';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
   ctx.beginPath();
   ctx.moveTo(-20, -5 + bob); ctx.lineTo(-12, -5 + bob);
   ctx.stroke();
 
-  // Body (big blue blob)
-  const bodyGrad = ctx.createRadialGradient(-5, -5 + bob, 5, 0, 0 + bob, 26);
-  bodyGrad.addColorStop(0, '#5bc8f0');
-  bodyGrad.addColorStop(1, '#1a7ab8');
-  ctx.fillStyle = bodyGrad;
+  // 潜水服身体(径向光照渐变)
+  const bodyG = ctx.createRadialGradient(-8, -8 + bob, 4, 0, 0 + bob, 30);
+  bodyG.addColorStop(0, '#7ee0ff');
+  bodyG.addColorStop(0.35, '#3ab0e8');
+  bodyG.addColorStop(0.7, '#1a7ab8');
+  bodyG.addColorStop(1, '#0d4a7a');
+  ctx.fillStyle = bodyG;
   ctx.beginPath();
   ctx.ellipse(0, 0 + bob, 26, 28, 0, 0, Math.PI * 2);
   ctx.fill();
-
-  // Wetsuit lines
-  ctx.strokeStyle = '#1560a0';
-  ctx.lineWidth = 2;
+  // 潜水服缝线
+  ctx.strokeStyle = 'rgba(10,80,160,0.6)';
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(-15, -10 + bob); ctx.lineTo(-20, 10 + bob);
+  ctx.moveTo(-14, -12 + bob); ctx.lineTo(-18, 12 + bob);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(15, -10 + bob); ctx.lineTo(20, 10 + bob);
+  ctx.moveTo(14, -12 + bob); ctx.lineTo(18, 12 + bob);
   ctx.stroke();
-
-  // Mask
-  ctx.fillStyle = '#2a2a2a';
+  // 胸口徽标高光
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
   ctx.beginPath();
-  ctx.ellipse(4, -14 + bob, 15, 11, -0.2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(100,200,255,0.5)';
-  ctx.beginPath();
-  ctx.ellipse(4, -15 + bob, 13, 9, -0.2, 0, Math.PI * 2);
+  ctx.ellipse(-4, -5 + bob, 12, 8, -0.2, 0, Math.PI * 2);
   ctx.fill();
 
-  // Eyes through mask
+  // 面罩框架
+  ctx.fillStyle = '#222';
+  ctx.beginPath();
+  ctx.ellipse(4, -14 + bob, 16, 12, -0.15, 0, Math.PI * 2);
+  ctx.fill();
+  // 面罩玻璃
+  const maskG = ctx.createLinearGradient(-8, -22 + bob, 14, -8 + bob);
+  maskG.addColorStop(0, 'rgba(180,240,255,0.7)');
+  maskG.addColorStop(0.5, 'rgba(80,180,255,0.45)');
+  maskG.addColorStop(1, 'rgba(20,100,200,0.3)');
+  ctx.fillStyle = maskG;
+  ctx.beginPath();
+  ctx.ellipse(4, -15 + bob, 14, 10, -0.15, 0, Math.PI * 2);
+  ctx.fill();
+  // 面罩反光斑
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.beginPath();
+  ctx.ellipse(-2, -20 + bob, 5, 2.5, -0.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 眼睛
   ctx.fillStyle = '#fff';
   ctx.beginPath();
-  ctx.arc(-3, -15 + bob, 4, 0, Math.PI * 2);
+  ctx.arc(-3, -15 + bob, 4.5, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(9, -15 + bob, 4, 0, Math.PI * 2);
+  ctx.arc(9, -15 + bob, 4.5, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = '#333';
+  ctx.fillStyle = '#222';
   ctx.beginPath();
-  ctx.arc(-2, -15 + bob, 2.5, 0, Math.PI * 2);
+  ctx.arc(-2, -15 + bob, 2.8, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(10, -15 + bob, 2.5, 0, Math.PI * 2);
+  ctx.arc(10, -15 + bob, 2.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.beginPath();
+  ctx.arc(-1, -16.5 + bob, 1.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(11, -16.5 + bob, 1.2, 0, Math.PI * 2);
   ctx.fill();
 
-  // Snorkel tube
+  // 呼吸管
   ctx.strokeStyle = '#f80';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 3.5;
+  ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(16, -20 + bob); ctx.lineTo(18, -36); ctx.lineTo(22, -36);
+  ctx.moveTo(16, -20 + bob); ctx.lineTo(19, -38); ctx.lineTo(24, -38);
+  ctx.stroke();
+  ctx.strokeStyle = '#fa4';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(16, -20 + bob); ctx.lineTo(19, -38); ctx.lineTo(24, -38);
   ctx.stroke();
 
-  // Flippers
-  ctx.fillStyle = '#f80';
-  const flipperX = Math.sin(GS.time * 3) * 8;
+  // 手臂
+  const armG = ctx.createLinearGradient(-30, 0, -18, 0);
+  armG.addColorStop(0, '#0d4a7a');
+  armG.addColorStop(0.5, '#1a7ab8');
+  armG.addColorStop(1, '#3ab0e8');
+  ctx.fillStyle = armG;
   ctx.beginPath();
-  ctx.ellipse(-10 + flipperX, 32 + bob, 12, 7, 0.4, 0, Math.PI * 2);
+  ctx.ellipse(-24, 5 + bob, 7, 14, 0.35, 0, Math.PI * 2);
   ctx.fill();
+  const armG2 = ctx.createLinearGradient(18, 0, 30, 0);
+  armG2.addColorStop(0, '#3ab0e8');
+  armG2.addColorStop(0.5, '#1a7ab8');
+  armG2.addColorStop(1, '#0d4a7a');
+  ctx.fillStyle = armG2;
   ctx.beginPath();
-  ctx.ellipse(10 - flipperX, 32 + bob, 12, 7, -0.4, 0, Math.PI * 2);
+  ctx.ellipse(24, 5 + bob, 7, 14, -0.35, 0, Math.PI * 2);
   ctx.fill();
 
-  // Arms
-  ctx.fillStyle = '#1a7ab8';
+  // 脚蹼(动画)
+  const flipAnim = Math.sin(GS.time * 3) * 10;
+  const flipG = ctx.createLinearGradient(-20, 25, 0, 45);
+  flipG.addColorStop(0, '#e05000');
+  flipG.addColorStop(1, '#ff8c00');
+  ctx.fillStyle = flipG;
   ctx.beginPath();
-  ctx.ellipse(-24, 5 + bob, 7, 14, 0.4, 0, Math.PI * 2);
+  ctx.ellipse(-10 + flipAnim, 32 + bob, 13, 7, 0.4, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.ellipse(24, 5 + bob, 7, 14, -0.4, 0, Math.PI * 2);
+  ctx.ellipse(10 - flipAnim, 32 + bob, 13, 7, -0.4, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
 
-  // Diver bubbles
+  // 气泡(折射效果)
   for (const b of d.bubbles) {
     ctx.save();
-    ctx.globalAlpha = b.life;
-    ctx.strokeStyle = 'rgba(200,240,255,0.8)';
-    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = b.life * 0.9;
+    // 气泡内部折射色
+    const bGrad = ctx.createRadialGradient(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.05, b.x, b.y, b.r);
+    bGrad.addColorStop(0, 'rgba(220,245,255,0.5)');
+    bGrad.addColorStop(0.6, 'rgba(150,210,255,0.1)');
+    bGrad.addColorStop(1, 'rgba(100,180,255,0.05)');
+    ctx.fillStyle = bGrad;
     ctx.beginPath();
     ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fill();
+    // 轮廓
+    ctx.strokeStyle = 'rgba(180,230,255,0.75)';
+    ctx.lineWidth = 1.2;
     ctx.stroke();
+    // 高光点
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.beginPath();
+    ctx.arc(b.x - b.r * 0.3, b.y - b.r * 0.35, b.r * 0.25, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 }
 
 // ============ RESTAURANT DRAWING ============
 function drawRestaurant() {
-  // Background - beach/restaurant scene
-  // Sky
-  const skyGrad = ctx.createLinearGradient(0, 0, 0, 250);
-  skyGrad.addColorStop(0, '#87ceeb');
-  skyGrad.addColorStop(1, '#b8e4f7');
+  // 天空渐变
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, 260);
+  skyGrad.addColorStop(0, '#5ba8d8');
+  skyGrad.addColorStop(0.6, '#9fd0f0');
+  skyGrad.addColorStop(1, '#c8e8f8');
   ctx.fillStyle = skyGrad;
-  ctx.fillRect(0, 0, 900, 250);
+  ctx.fillRect(0, 0, 900, 260);
 
-  // Sun
-  ctx.fillStyle = '#ffe066';
-  ctx.beginPath();
-  ctx.arc(820, 60, 40, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#ffdd44';
-  ctx.lineWidth = 3;
-  for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) {
-    ctx.beginPath();
-    ctx.moveTo(820 + Math.cos(a) * 48, 60 + Math.sin(a) * 48);
-    ctx.lineTo(820 + Math.cos(a) * 58, 60 + Math.sin(a) * 58);
-    ctx.stroke();
+  // 云朵
+  const clouds = [
+    { x: 120 + Math.sin(GS.time * 0.08) * 15, y: 40, r: 28 },
+    { x: 380 + Math.sin(GS.time * 0.06 + 1) * 12, y: 55, r: 22 },
+    { x: 650 + Math.sin(GS.time * 0.07 + 2) * 18, y: 35, r: 32 }
+  ];
+  for (const c of clouds) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    for (const [ox, oy, or] of [[-22, 8, c.r * 0.7], [0, 0, c.r], [20, 6, c.r * 0.75], [-12, 12, c.r * 0.55], [12, 12, c.r * 0.55]]) {
+      ctx.beginPath();
+      ctx.arc(c.x + ox, c.y + oy, or, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
-  // Ocean bg
-  const seaGrad = ctx.createLinearGradient(0, 180, 0, 250);
-  seaGrad.addColorStop(0, '#1a8cb8');
+  // 太阳
+  const sunG = ctx.createRadialGradient(820, 55, 5, 820, 55, 48);
+  sunG.addColorStop(0, '#fff7aa');
+  sunG.addColorStop(0.4, '#ffe055');
+  sunG.addColorStop(1, 'rgba(255,200,0,0)');
+  ctx.fillStyle = sunG;
+  ctx.beginPath();
+  ctx.arc(820, 55, 48, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffe055';
+  ctx.beginPath();
+  ctx.arc(820, 55, 30, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 海面
+  const seaGrad = ctx.createLinearGradient(0, 175, 0, 255);
+  seaGrad.addColorStop(0, '#2a9cc8');
   seaGrad.addColorStop(1, '#0d5a80');
   ctx.fillStyle = seaGrad;
-  ctx.fillRect(0, 180, 900, 70);
-  // Waves
-  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-  ctx.lineWidth = 2;
-  for (let i = 0; i < 6; i++) {
-    const wx = ((GS.time * 50 + i * 160) % 1000) - 50;
+  ctx.fillRect(0, 175, 900, 75);
+  // 海浪高光
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 2.5;
+  for (let i = 0; i < 5; i++) {
+    const wx = ((GS.time * 55 + i * 170) % 1050) - 60;
     ctx.beginPath();
-    ctx.moveTo(wx, 200 + i * 8);
-    ctx.quadraticCurveTo(wx + 30, 195 + i * 8, wx + 60, 200 + i * 8);
+    ctx.moveTo(wx, 195 + i * 9);
+    ctx.quadraticCurveTo(wx + 35, 188 + i * 9, wx + 70, 195 + i * 9);
     ctx.stroke();
   }
 
-  // Beach sand
-  const beachGrad = ctx.createLinearGradient(0, 245, 0, 310);
-  beachGrad.addColorStop(0, '#f0c878');
-  beachGrad.addColorStop(1, '#d4a050');
+  // 沙滩(渐变+细节)
+  const beachGrad = ctx.createLinearGradient(0, 245, 0, 315);
+  beachGrad.addColorStop(0, '#f0d080');
+  beachGrad.addColorStop(0.5, '#ddb858');
+  beachGrad.addColorStop(1, '#c8a040');
   ctx.fillStyle = beachGrad;
-  ctx.fillRect(0, 245, 900, 65);
-
-  // Restaurant floor
-  ctx.fillStyle = '#8B4513';
-  ctx.fillRect(0, 310, 900, 290);
-  // Floor tiles
-  ctx.strokeStyle = '#7a3a10';
+  ctx.fillRect(0, 245, 900, 70);
+  // 沙滩光泽纹
+  ctx.strokeStyle = 'rgba(255,230,150,0.3)';
   ctx.lineWidth = 1;
-  for (let x = 0; x < 900; x += 60) {
-    ctx.beginPath(); ctx.moveTo(x, 310); ctx.lineTo(x, 600); ctx.stroke();
-  }
-  for (let y = 310; y < 600; y += 60) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(900, y); ctx.stroke();
-  }
-
-  // Restaurant walls/roof
-  ctx.fillStyle = '#f5e6c8';
-  ctx.fillRect(20, 260, 860, 80);
-  // Noren / banner
-  ctx.fillStyle = '#c00';
-  ctx.font = 'bold 24px Microsoft YaHei';
-  ctx.fillText('🍣 深海寿司 DEEP SEA SUSHI 🐟', 180, 300);
-
-  // Tables
-  for (const t of GS.tables) {
-    drawTable(t);
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath();
+    ctx.moveTo(0, 258 + i * 12);
+    for (let x = 0; x <= 900; x += 30) {
+      ctx.lineTo(x, 258 + i * 12 + Math.sin(x * 0.05 + i) * 2);
+    }
+    ctx.stroke();
   }
 
-  // Counter/Kitchen area
-  ctx.fillStyle = '#5a3010';
-  ctx.fillRect(350, 320, 200, 50);
-  ctx.fillStyle = '#7a4820';
-  ctx.fillRect(350, 318, 200, 8);
+  // 餐厅地板(透视木地板)
+  const floorGrad = ctx.createLinearGradient(0, 315, 0, 600);
+  floorGrad.addColorStop(0, '#a0622a');
+  floorGrad.addColorStop(0.3, '#8a5220');
+  floorGrad.addColorStop(1, '#6a3810');
+  ctx.fillStyle = floorGrad;
+  ctx.fillRect(0, 315, 900, 285);
+  // 木地板纹路(透视感)
+  for (let row = 0; row < 6; row++) {
+    const y1 = 315 + row * 48;
+    const y2 = y1 + 48;
+    const perspective = row / 6;
+    ctx.strokeStyle = `rgba(60,30,5,${0.25 + perspective * 0.15})`;
+    ctx.lineWidth = 1 + perspective;
+    ctx.beginPath(); ctx.moveTo(0, y2); ctx.lineTo(900, y2); ctx.stroke();
+    // 竖向木纹(向消失点收拢)
+    const vp = 450; // 消失点x
+    for (let col = 0; col < 10; col++) {
+      const bx = col * 90;
+      const tx = vp + (bx - vp) * (1 - perspective * 0.3);
+      ctx.strokeStyle = `rgba(60,30,5,${0.12 + perspective * 0.08})`;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(bx, y2); ctx.lineTo(tx, y1); ctx.stroke();
+    }
+    // 木板高光
+    ctx.fillStyle = `rgba(180,120,60,${0.04 + perspective * 0.03})`;
+    ctx.fillRect(0, y1 + 4, 900, 10);
+  }
 
-  // Fish inventory display
-  ctx.fillStyle = 'rgba(0,0,0,0.7)';
-  ctx.fillRect(10, 370, 180, 200);
-  ctx.strokeStyle = '#aaa';
+  // 餐厅外墙/门楣
+  const wallGrad = ctx.createLinearGradient(0, 258, 0, 320);
+  wallGrad.addColorStop(0, '#f0e0c0');
+  wallGrad.addColorStop(1, '#d8c8a0');
+  ctx.fillStyle = wallGrad;
+  ctx.fillRect(20, 258, 860, 68);
+  // 门楣装饰线
+  ctx.strokeStyle = 'rgba(160,120,60,0.5)';
   ctx.lineWidth = 2;
-  ctx.strokeRect(10, 370, 180, 200);
-  ctx.fillStyle = '#ffe';
+  ctx.strokeRect(22, 260, 856, 64);
+  ctx.strokeRect(26, 264, 848, 56);
+  // 店名
+  ctx.fillStyle = '#8a1010';
+  ctx.font = 'bold 26px Microsoft YaHei';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(255,200,150,0.5)';
+  ctx.shadowBlur = 6;
+  ctx.fillText('🍣 深海寿司  DEEP SEA SUSHI  🐟', 450, 297);
+  ctx.shadowBlur = 0;
+  ctx.textAlign = 'left';
+
+  // 桌椅
+  for (const t of GS.tables) drawTable(t);
+
+  // 吧台(立体)
+  const counterG = ctx.createLinearGradient(350, 320, 350, 375);
+  counterG.addColorStop(0, '#7a4828');
+  counterG.addColorStop(0.15, '#6a3818');
+  counterG.addColorStop(1, '#4a2808');
+  ctx.fillStyle = counterG;
+  ctx.fillRect(350, 322, 200, 52);
+  // 台面高光
+  const topG = ctx.createLinearGradient(350, 318, 560, 328);
+  topG.addColorStop(0, '#a06030');
+  topG.addColorStop(0.3, '#c08050');
+  topG.addColorStop(0.7, '#b07040');
+  topG.addColorStop(1, '#906020');
+  ctx.fillStyle = topG;
+  ctx.fillRect(348, 316, 204, 10);
+  // 台面边缘高光
+  ctx.fillStyle = 'rgba(255,200,120,0.35)';
+  ctx.fillRect(350, 316, 200, 4);
+
+  // 仓库面板
+  const panelG = ctx.createLinearGradient(10, 370, 190, 570);
+  panelG.addColorStop(0, 'rgba(0,5,20,0.88)');
+  panelG.addColorStop(1, 'rgba(0,0,10,0.92)');
+  ctx.fillStyle = panelG;
+  ctx.beginPath();
+  ctx.roundRect(10, 370, 180, 205, 10);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(100,180,255,0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(10, 370, 180, 205, 10);
+  ctx.stroke();
+  // 内边框高光
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(13, 373, 174, 199, 8);
+  ctx.stroke();
+
+  ctx.fillStyle = '#cce8ff';
   ctx.font = 'bold 14px Microsoft YaHei';
-  ctx.fillText('📦 仓库', 70, 390);
+  ctx.fillText('📦 仓库', 62, 393);
 
   const warehouseByType = {};
   for (const w of GS.warehouse) {
     warehouseByType[w.type] = (warehouseByType[w.type] || 0) + 1;
   }
-  let wy = 410;
+  let wy = 412;
   ctx.font = '13px Microsoft YaHei';
   let totalItems = 0;
   for (const ft of FISH_TYPES) {
@@ -628,178 +1083,309 @@ function drawRestaurant() {
     if (cnt > 0) {
       totalItems++;
       const isSelected = GS.preparingDish && GS.preparingDish.type === ft.type;
-      ctx.fillStyle = isSelected ? '#ffdd00' : (cnt > 0 ? '#adf' : '#556');
+      if (isSelected) {
+        ctx.fillStyle = 'rgba(255,220,0,0.15)';
+        ctx.beginPath();
+        ctx.roundRect(14, wy - 14, 172, 20, 4);
+        ctx.fill();
+      }
+      ctx.fillStyle = isSelected ? '#ffdd00' : '#adf';
       ctx.fillText(`${ft.emoji} ${ft.name}  x${cnt}`, 20, wy);
-      // Sell button
       ctx.fillStyle = '#f88';
       ctx.font = '11px Microsoft YaHei';
-      ctx.fillText('[卖出]', 145, wy);
+      ctx.fillText('[卖出]', 148, wy);
       ctx.font = '13px Microsoft YaHei';
       wy += 22;
     }
   }
   if (totalItems === 0) {
-    ctx.fillStyle = '#888';
+    ctx.fillStyle = '#668';
     ctx.font = '13px Microsoft YaHei';
-    ctx.fillText('仓库空空如也...', 30, 430);
-    ctx.fillText('去潜水捕鱼吧！', 35, 450);
+    ctx.fillText('仓库空空如也...', 28, 432);
+    ctx.fillText('去潜水捕鱼吧！', 32, 452);
   }
 
-  // Quick sell all button
-  ctx.fillStyle = '#1a6';
+  // 全部出售按钮
+  const sellBtnG = ctx.createLinearGradient(15, 548, 95, 575);
+  sellBtnG.addColorStop(0, '#1da855');
+  sellBtnG.addColorStop(1, '#148840');
+  ctx.fillStyle = sellBtnG;
   ctx.beginPath();
-  ctx.roundRect(15, 545, 80, 25, 6);
+  ctx.roundRect(15, 548, 80, 26, 7);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.beginPath();
+  ctx.roundRect(15, 548, 80, 12, 7);
   ctx.fill();
   ctx.fillStyle = '#fff';
   ctx.font = '12px Microsoft YaHei';
-  ctx.fillText('全部出售', 27, 561);
+  ctx.fillText('全部出售', 28, 565);
 
-  // Coins display
   ctx.fillStyle = '#ffe066';
   ctx.font = 'bold 15px Microsoft YaHei';
-  ctx.fillText(`💰 ${GS.coins} 金币`, 20, 590);
+  ctx.fillText(`💰 ${GS.coins} 金币`, 20, 592);
 
-  // Menu board
-  ctx.fillStyle = 'rgba(0,0,0,0.75)';
+  // 菜单板
+  const menuG = ctx.createLinearGradient(720, 370, 885, 570);
+  menuG.addColorStop(0, 'rgba(10,8,2,0.88)');
+  menuG.addColorStop(1, 'rgba(5,5,0,0.92)');
+  ctx.fillStyle = menuG;
   ctx.beginPath();
-  ctx.roundRect(720, 370, 165, 200, 8);
+  ctx.roundRect(720, 370, 165, 200, 10);
   ctx.fill();
-  ctx.strokeStyle = '#aa8';
+  ctx.strokeStyle = 'rgba(200,180,80,0.4)';
   ctx.lineWidth = 1.5;
-  ctx.strokeRect(720, 370, 165, 200);
-  ctx.fillStyle = '#ffe';
+  ctx.beginPath();
+  ctx.roundRect(720, 370, 165, 200, 10);
+  ctx.stroke();
+  ctx.fillStyle = '#ffe8a0';
   ctx.font = 'bold 13px Microsoft YaHei';
-  ctx.fillText('📋 今日菜单', 760, 390);
+  ctx.fillText('📋 今日菜单', 755, 392);
+  // 分隔线
+  ctx.strokeStyle = 'rgba(200,180,80,0.25)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(728, 400); ctx.lineTo(877, 400);
+  ctx.stroke();
   ctx.font = '12px Microsoft YaHei';
-  let my = 408;
+  let my = 415;
   for (const dish of SUSHI_MENU) {
     const hasIngredient = (warehouseByType[dish.fishType] || 0) > 0;
-    ctx.fillStyle = hasIngredient ? '#adf' : '#667';
+    ctx.fillStyle = hasIngredient ? '#c8f0d8' : '#4a5060';
     ctx.fillText(`${dish.emoji}${dish.name}`, 728, my);
-    ctx.fillText(`¥${dish.price}`, 828, my);
-    my += 24;
+    ctx.fillStyle = hasIngredient ? '#ffe066' : '#4a5060';
+    ctx.fillText(`¥${dish.price}`, 836, my);
+    my += 25;
   }
 
-  // Upgrade shop
   drawUpgradeShop();
 }
 
 function drawTable(t) {
   const { x, y, customer } = t;
-  // Table
-  ctx.fillStyle = '#8b6040';
+
+  // 地面阴影
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
   ctx.beginPath();
-  ctx.ellipse(x, y + 20, 45, 20, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#6b4020';
-  ctx.beginPath();
-  ctx.rect(x - 5, y + 20, 10, 25);
+  ctx.ellipse(x, y + 50, 55, 12, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Chairs
-  ctx.fillStyle = '#5a3818';
-  for (let i = -1; i <= 1; i += 2) {
+  // 桌腿
+  ctx.fillStyle = '#4a2808';
+  ctx.beginPath();
+  ctx.rect(x - 4, y + 22, 8, 28);
+  ctx.fill();
+  // 腿高光
+  ctx.fillStyle = 'rgba(255,180,100,0.2)';
+  ctx.beginPath();
+  ctx.rect(x - 3, y + 22, 3, 28);
+  ctx.fill();
+
+  // 椅子(立体)
+  for (const side of [-1, 1]) {
+    const cx = x + side * 40;
+    const cy = y + 22;
+    // 椅座阴影
+    ctx.fillStyle = '#3a2008';
     ctx.beginPath();
-    ctx.arc(x + i * 38, y + 22, 12, 0, Math.PI * 2);
+    ctx.ellipse(cx + 2, cy + 2, 13, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // 椅座
+    const chairG = ctx.createRadialGradient(cx - 4, cy - 3, 1, cx, cy, 13);
+    chairG.addColorStop(0, '#8a5828');
+    chairG.addColorStop(1, '#4a2808');
+    ctx.fillStyle = chairG;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 13, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,200,130,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(cx - 3, cy - 2, 6, 3, -0.3, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  if (customer) {
-    drawCustomer(customer, x, y - 20);
-  }
+  // 桌面阴影
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(x + 3, y + 24, 47, 22, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 桌面(椭圆立体)
+  const tableG = ctx.createRadialGradient(x - 15, y + 5, 5, x, y + 20, 50);
+  tableG.addColorStop(0, '#b07848');
+  tableG.addColorStop(0.5, '#8a5828');
+  tableG.addColorStop(1, '#5a3010');
+  ctx.fillStyle = tableG;
+  ctx.beginPath();
+  ctx.ellipse(x, y + 20, 46, 22, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // 桌面高光边缘
+  ctx.strokeStyle = 'rgba(200,140,70,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.ellipse(x, y + 20, 46, 22, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  // 桌面高光
+  ctx.fillStyle = 'rgba(255,210,140,0.2)';
+  ctx.beginPath();
+  ctx.ellipse(x - 12, y + 13, 22, 9, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+  // 餐具摆设
+  ctx.fillStyle = 'rgba(220,200,180,0.6)';
+  ctx.beginPath();
+  ctx.ellipse(x, y + 19, 12, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (customer) drawCustomer(customer, x, y - 22);
 }
 
 function drawCustomer(c, x, y) {
   ctx.save();
   ctx.translate(x, y);
 
-  // Body
-  ctx.fillStyle = c.color || '#f4c88a';
+  // 身体渐变
+  const bodyG = ctx.createRadialGradient(-5, -5, 3, 0, 0, 22);
+  bodyG.addColorStop(0, shadeColor(c.color || '#f4c88a', 1.3));
+  bodyG.addColorStop(1, shadeColor(c.color || '#f4c88a', 0.75));
+  ctx.fillStyle = bodyG;
   ctx.beginPath();
   ctx.ellipse(0, 0, 18, 22, 0, 0, Math.PI * 2);
   ctx.fill();
+  // 衣服高光
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.beginPath();
+  ctx.ellipse(-5, -8, 9, 7, -0.3, 0, Math.PI * 2);
+  ctx.fill();
 
-  // Head
-  ctx.fillStyle = c.skinColor || '#f8d9a0';
+  // 头部
+  const headG = ctx.createRadialGradient(-4, -32, 2, 0, -28, 15);
+  headG.addColorStop(0, shadeColor(c.skinColor || '#f8d9a0', 1.2));
+  headG.addColorStop(1, shadeColor(c.skinColor || '#f8d9a0', 0.85));
+  ctx.fillStyle = headG;
   ctx.beginPath();
   ctx.arc(0, -28, 14, 0, Math.PI * 2);
   ctx.fill();
 
-  // Hair
+  // 头发
   ctx.fillStyle = c.hairColor || '#333';
   ctx.beginPath();
   ctx.arc(0, -36, 14, Math.PI, 0);
   ctx.fill();
+  // 头发高光
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.beginPath();
+  ctx.ellipse(-4, -40, 7, 3.5, -0.4, 0, Math.PI * 2);
+  ctx.fill();
 
-  // Eyes
+  // 眼睛
+  ctx.fillStyle = '#fff';
+  for (const ex of [-5, 5]) {
+    ctx.beginPath();
+    ctx.arc(ex, -30, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.fillStyle = '#333';
-  ctx.beginPath();
-  ctx.arc(-5, -30, 2.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(5, -30, 2.5, 0, Math.PI * 2);
-  ctx.fill();
+  for (const ex of [-5, 5]) {
+    ctx.beginPath();
+    ctx.arc(ex, -30, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  for (const ex of [-5, 5]) {
+    ctx.beginPath();
+    ctx.arc(ex + 0.8, -31, 0.9, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
-  // Smile or impatient
-  ctx.strokeStyle = '#333';
+  // 表情
+  ctx.strokeStyle = '#555';
   ctx.lineWidth = 1.5;
   if (c.patience > 0.5) {
     ctx.beginPath();
-    ctx.arc(0, -23, 5, 0.2, Math.PI - 0.2);
+    ctx.arc(0, -24, 5, 0.2, Math.PI - 0.2);
     ctx.stroke();
   } else {
     ctx.beginPath();
-    ctx.arc(0, -18, 5, Math.PI + 0.2, -0.2);
+    ctx.arc(0, -19, 5, Math.PI + 0.2, -0.2);
     ctx.stroke();
   }
 
-  // Order bubble
+  // 订单气泡
   if (c.order && c.state === 'waiting') {
-    const bw = 90, bh = 40;
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    const bw = 92, bh = 42;
+    // 气泡阴影
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
     ctx.beginPath();
-    ctx.roundRect(10, -90, bw, bh, 8);
+    ctx.roundRect(13, -91, bw, bh, 9);
     ctx.fill();
-    ctx.strokeStyle = '#888';
+    // 气泡背景
+    ctx.fillStyle = 'rgba(255,255,255,0.97)';
+    ctx.beginPath();
+    ctx.roundRect(10, -93, bw, bh, 9);
+    ctx.fill();
+    ctx.strokeStyle = '#ccc';
     ctx.lineWidth = 1;
-    ctx.strokeRect(10, -90, bw, bh);
-    // Triangle
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.stroke();
+    // 三角
+    ctx.fillStyle = 'rgba(255,255,255,0.97)';
     ctx.beginPath();
-    ctx.moveTo(15, -50); ctx.lineTo(5, -42); ctx.lineTo(25, -50);
+    ctx.moveTo(16, -51); ctx.lineTo(6, -43); ctx.lineTo(26, -51);
     ctx.fill();
+
     ctx.fillStyle = '#333';
     ctx.font = '13px Microsoft YaHei';
-    ctx.fillText(c.order.emoji + ' ' + c.order.name, 16, -70);
+    ctx.fillText(c.order.emoji + ' ' + c.order.name, 17, -72);
 
-    // Patience bar
-    ctx.fillStyle = '#ddd';
-    ctx.fillRect(16, -58, 70, 6);
-    const patienceColor = c.patience > 0.5 ? '#4c4' : c.patience > 0.25 ? '#fa4' : '#f44';
-    ctx.fillStyle = patienceColor;
-    ctx.fillRect(16, -58, 70 * c.patience, 6);
+    // 耐心条(圆角 + 渐变)
+    ctx.fillStyle = '#e8e8e8';
+    ctx.beginPath();
+    ctx.roundRect(17, -61, 68, 7, 3);
+    ctx.fill();
+    const pColor = c.patience > 0.5 ? '#44cc44' : c.patience > 0.25 ? '#ffaa22' : '#ff3333';
+    const pG = ctx.createLinearGradient(17, 0, 17 + 68 * c.patience, 0);
+    pG.addColorStop(0, pColor);
+    pG.addColorStop(1, shadeColor(pColor, 0.8));
+    ctx.fillStyle = pG;
+    ctx.beginPath();
+    ctx.roundRect(17, -61, 68 * c.patience, 7, 3);
+    ctx.fill();
+    // 耐心条高光
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.beginPath();
+    ctx.roundRect(17, -61, 68 * c.patience, 3, 2);
+    ctx.fill();
   }
 
   if (c.state === 'served') {
-    ctx.font = '20px serif';
-    ctx.fillText('😊', -10, -55);
+    ctx.font = '22px serif';
+    ctx.fillText('😊', -11, -54);
   }
 
   ctx.restore();
 }
 
 function drawUpgradeShop() {
-  ctx.fillStyle = 'rgba(20,10,5,0.85)';
+  const shopG = ctx.createLinearGradient(205, 540, 705, 595);
+  shopG.addColorStop(0, 'rgba(15,8,2,0.9)');
+  shopG.addColorStop(1, 'rgba(8,5,0,0.9)');
+  ctx.fillStyle = shopG;
   ctx.beginPath();
-  ctx.roundRect(205, 540, 500, 50, 8);
+  ctx.roundRect(205, 540, 500, 52, 10);
   ctx.fill();
-  ctx.strokeStyle = '#aa8';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(205, 540, 500, 50);
+  ctx.strokeStyle = 'rgba(180,150,60,0.4)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(205, 540, 500, 52, 10);
+  ctx.stroke();
+  // 顶部高光
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.beginPath();
+  ctx.roundRect(207, 541, 496, 18, 8);
+  ctx.fill();
 
-  ctx.fillStyle = '#ffe';
+  ctx.fillStyle = '#d4b860';
   ctx.font = 'bold 13px Microsoft YaHei';
-  ctx.fillText('🔧 升级:', 215, 562);
+  ctx.fillText('🔧 升级:', 216, 564);
 
   const upgrades = [
     { label: '🎣 渔网升级', desc: '捕鱼范围+20%', cost: 200, key: 'netLevel' },
@@ -809,16 +1395,39 @@ function drawUpgradeShop() {
 
   let ux = 295;
   for (const u of upgrades) {
-    ctx.fillStyle = GS.coins >= u.cost ? '#2a8' : '#666';
+    const canAfford = GS.coins >= u.cost;
+    // 按钮背景渐变
+    const btnG = ctx.createLinearGradient(ux, 543, ux, 583);
+    if (canAfford) {
+      btnG.addColorStop(0, '#2ab868');
+      btnG.addColorStop(0.5, '#18a050');
+      btnG.addColorStop(1, '#108038');
+    } else {
+      btnG.addColorStop(0, '#555');
+      btnG.addColorStop(1, '#3a3a3a');
+    }
+    ctx.fillStyle = btnG;
     ctx.beginPath();
-    ctx.roundRect(ux, 543, 140, 40, 6);
+    ctx.roundRect(ux, 543, 140, 42, 7);
     ctx.fill();
+    // 高光
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.beginPath();
+    ctx.roundRect(ux + 1, 543, 138, 18, 7);
+    ctx.fill();
+    // 边框
+    ctx.strokeStyle = canAfford ? 'rgba(100,255,150,0.3)' : 'rgba(100,100,100,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(ux, 543, 140, 42, 7);
+    ctx.stroke();
+
     ctx.fillStyle = '#fff';
     ctx.font = '12px Microsoft YaHei';
-    ctx.fillText(u.label, ux + 6, 558);
-    ctx.fillStyle = '#ffd';
+    ctx.fillText(u.label, ux + 7, 559);
+    ctx.fillStyle = canAfford ? '#c8ffda' : '#888';
     ctx.font = '11px Microsoft YaHei';
-    ctx.fillText(`💰${u.cost}  ${u.desc}`, ux + 6, 575);
+    ctx.fillText(`💰${u.cost}  ${u.desc}`, ux + 7, 576);
     ux += 155;
   }
 }
@@ -832,9 +1441,12 @@ function drawFloatingTexts() {
   for (const ft of floatingTexts) {
     ctx.save();
     ctx.globalAlpha = ft.life;
-    ctx.fillStyle = ft.color;
+    ctx.shadowColor = ft.color || '#ff4';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = ft.color || '#ff4';
     ctx.font = 'bold 18px Microsoft YaHei';
     ctx.fillText(ft.text, ft.x, ft.y);
+    ctx.shadowBlur = 0;
     ctx.restore();
   }
 }
@@ -1334,25 +1946,39 @@ function loop(ts) {
     drawBackground();
     drawDecorations();
 
-    // Draw bubbles
+    // Draw bubbles (折射气泡)
     for (const b of bubbles) {
       ctx.save();
-      ctx.globalAlpha = b.life * 0.7;
-      ctx.strokeStyle = 'rgba(200,240,255,0.8)';
-      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = b.life * 0.8;
+      const bG = ctx.createRadialGradient(b.x - b.r * 0.3, b.y - b.r * 0.35, 0, b.x, b.y, b.r);
+      bG.addColorStop(0, 'rgba(220,245,255,0.4)');
+      bG.addColorStop(0.7, 'rgba(120,200,255,0.08)');
+      bG.addColorStop(1, 'rgba(80,160,255,0.03)');
+      ctx.fillStyle = bG;
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(180,230,255,0.7)';
+      ctx.lineWidth = 1;
       ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ctx.beginPath();
+      ctx.arc(b.x - b.r * 0.28, b.y - b.r * 0.32, b.r * 0.22, 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
     }
 
-    // Draw particles
+    // Draw particles (立体水花)
     for (const p of particles) {
       ctx.save();
       ctx.globalAlpha = p.life;
-      ctx.fillStyle = p.color || '#7ef';
+      const pG = ctx.createRadialGradient(p.x - 1, p.y - 1, 0, p.x, p.y, 5);
+      pG.addColorStop(0, 'rgba(255,255,255,0.9)');
+      pG.addColorStop(0.4, p.color || '#7ef');
+      pG.addColorStop(1, 'rgba(0,150,255,0)');
+      ctx.fillStyle = pG;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
