@@ -7,7 +7,7 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Microsoft YaHei', sans-serif; }
-  #gameCanvas { display: block; cursor: grab; width: 100vw; height: 100vh; }
+  #gameCanvas { display: block; cursor: crosshair; width: 100vw; height: 100vh; }
   #ui { position: absolute; top: 0; left: 0; width: 100vw; pointer-events: none; }
   .hud { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; }
   .hud-item { background: rgba(0,5,20,0.82); border: 1px solid rgba(100,200,255,0.5); border-radius: 10px; padding: 6px 14px; color: #9ef; font-size: 13px; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,100,200,0.3), inset 0 1px 0 rgba(255,255,255,0.08); }
@@ -2258,94 +2258,68 @@ function updateRestaurant(dt) {
 
 // ============ INPUT ============
 const keys = {};
+
+// Mouse position in screen coords (updated on every mousemove)
+let mouseScreen = { x: VW / 2, y: VH / 2 };
+
+// Camera target — driven by mouse position
+let camTarget = { x: 0, y: 0 };
+
 document.addEventListener('keydown', e => {
   keys[e.key] = true;
   if (e.key === 'e' || e.key === 'E') {
     if (GS.scene === 'fishing') goAshore();
   }
+  // Space bar — catch nearest fish to screen center
+  if ((e.key === ' ' || e.key === 'Spacebar') && GS.scene === 'fishing') {
+    e.preventDefault();
+    const mx = cam.x + VW / 2;
+    const my = cam.y + VH / 2;
+    handleFishingClick(mx, my);
+  }
 });
 document.addEventListener('keyup', e => keys[e.key] = false);
 
-// Drag-to-pan state
-let drag = { active: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0, moved: false };
-
-canvas.addEventListener('mousedown', e => {
-  if (GS.scene !== 'fishing') return;
-  drag.active = true;
-  drag.moved = false;
-  drag.startX = e.clientX;
-  drag.startY = e.clientY;
-  drag.camStartX = cam.x;
-  drag.camStartY = cam.y;
-  canvas.style.cursor = 'grabbing';
-});
-
 canvas.addEventListener('mousemove', e => {
-  if (GS.scene !== 'fishing') return;
-  if (!drag.active) return;
-  const dx = e.clientX - drag.startX;
-  const dy = e.clientY - drag.startY;
-  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
-  cam.x = Math.max(0, Math.min(WW - VW, drag.camStartX - dx));
-  cam.y = Math.max(0, Math.min(WH - VH, drag.camStartY - dy));
+  mouseScreen.x = e.clientX;
+  mouseScreen.y = e.clientY;
 });
 
-canvas.addEventListener('mouseup', e => {
-  if (!drag.active) return;
-  drag.active = false;
-  canvas.style.cursor = 'grab';
-  if (!drag.moved && GS.scene === 'fishing') {
-    // Treat as click — convert screen to world coords
+// Left-click to catch fish at cursor position
+canvas.addEventListener('click', e => {
+  if (GS.scene === 'fishing') {
     const rect = canvas.getBoundingClientRect();
     const mx = (e.clientX - rect.left) + cam.x;
     const my = (e.clientY - rect.top) + cam.y;
     handleFishingClick(mx, my);
+  } else if (GS.scene === 'restaurant') {
+    const rect = canvas.getBoundingClientRect();
+    handleRestaurantClick(e.clientX - rect.left, e.clientY - rect.top);
   }
 });
 
-canvas.addEventListener('mouseleave', () => { drag.active = false; canvas.style.cursor = 'grab'; });
-
-// Touch support
+// Touch: move finger = pan camera; tap = catch fish
 canvas.addEventListener('touchstart', e => {
-  if (GS.scene !== 'fishing') return;
   e.preventDefault();
   const t = e.touches[0];
-  drag.active = true;
-  drag.moved = false;
-  drag.startX = t.clientX;
-  drag.startY = t.clientY;
-  drag.camStartX = cam.x;
-  drag.camStartY = cam.y;
+  mouseScreen.x = t.clientX;
+  mouseScreen.y = t.clientY;
 }, { passive: false });
 
 canvas.addEventListener('touchmove', e => {
-  if (!drag.active) return;
   e.preventDefault();
   const t = e.touches[0];
-  const dx = t.clientX - drag.startX;
-  const dy = t.clientY - drag.startY;
-  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
-  cam.x = Math.max(0, Math.min(WW - VW, drag.camStartX - dx));
-  cam.y = Math.max(0, Math.min(WH - VH, drag.camStartY - dy));
+  mouseScreen.x = t.clientX;
+  mouseScreen.y = t.clientY;
 }, { passive: false });
 
 canvas.addEventListener('touchend', e => {
-  if (!drag.active) return;
-  drag.active = false;
-  if (!drag.moved && GS.scene === 'fishing') {
+  if (GS.scene === 'fishing') {
     const t = e.changedTouches[0];
     const rect = canvas.getBoundingClientRect();
     const mx = (t.clientX - rect.left) + cam.x;
     const my = (t.clientY - rect.top) + cam.y;
     handleFishingClick(mx, my);
-  }
-});
-
-// Restaurant click (not drag-based)
-canvas.addEventListener('click', e => {
-  if (GS.scene === 'restaurant') {
-    const rect = canvas.getBoundingClientRect();
-    handleRestaurantClick(e.clientX - rect.left, e.clientY - rect.top);
   }
 });
 
@@ -2640,6 +2614,20 @@ function loop(ts) {
     // Restore camera transform — HUD drawn in screen space
     ctx.restore();
 
+    // Camera follows mouse — mouse at screen center = no offset,
+    // mouse at edge = camera shifts toward that side of the world
+    if (GS.scene === 'fishing') {
+      // Map mouse from [0,VW] → cam target in [0, WW-VW]
+      const normX = mouseScreen.x / VW; // 0..1
+      const normY = mouseScreen.y / VH;
+      camTarget.x = normX * (WW - VW);
+      camTarget.y = normY * (WH - VH);
+      cam.x += (camTarget.x - cam.x) * 0.04;
+      cam.y += (camTarget.y - cam.y) * 0.04;
+      cam.x = Math.max(0, Math.min(WW - VW, cam.x));
+      cam.y = Math.max(0, Math.min(WH - VH, cam.y));
+    }
+
     // Update diver — auto-wander around the viewport center
     {
       // Diver lazily follows the viewport center with gentle wandering
@@ -2719,10 +2707,13 @@ function init() {
   diver.y = WH / 2;
   cam.x = Math.max(0, Math.min(WW - VW, WW / 2 - VW / 2));
   cam.y = Math.max(0, Math.min(WH - VH, WH / 2 - VH / 2));
+  camTarget.x = cam.x;
+  camTarget.y = cam.y;
+  mouseScreen.x = VW / 2;
+  mouseScreen.y = VH / 2;
   generateDecorations();
-  // Spawn fish directly inside the viewport so they're visible immediately
   for (let i = 0; i < 28; i++) spawnFish(true);
-  showMessage('🤿 欢迎来到深海捕鱼！拖动画面探索海洋，点击鱼来捕获！', 4000);
+  showMessage('🤿 移动鼠标探索海洋，点击或空格键捕鱼！', 4000);
   requestAnimationFrame(loop);
 }
 
