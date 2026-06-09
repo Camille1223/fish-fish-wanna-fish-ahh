@@ -1489,8 +1489,8 @@ function drawDiver() {
 
 // ============ RESTAURANT DRAWING ============
 function drawRestaurant() {
-  // Deep dark background — modern restaurant vibe
-  ctx.fillStyle = '#0f1923';
+  // Light warm background
+  ctx.fillStyle = '#f5ede0';
   ctx.fillRect(0, 0, VW, VH);
 
   // Scale restaurant (designed at 900×600) to fit entirely within viewport
@@ -1501,135 +1501,160 @@ function drawRestaurant() {
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
 
-  // Background — dark restaurant interior
+  // Background — bright warm interior
   const bgGrad = ctx.createLinearGradient(0, 0, 0, 600);
-  bgGrad.addColorStop(0, '#1a2535');
-  bgGrad.addColorStop(0.5, '#141e2e');
-  bgGrad.addColorStop(1, '#0d1520');
+  bgGrad.addColorStop(0, '#faf3e8');
+  bgGrad.addColorStop(0.55, '#f2e8d8');
+  bgGrad.addColorStop(1, '#e8dcc8');
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, 900, 600);
 
-  // Subtle ambient light from ceiling — warm amber
-  const ceilLight = ctx.createRadialGradient(450, 0, 20, 450, 0, 400);
-  ceilLight.addColorStop(0, 'rgba(255,200,100,0.10)');
-  ceilLight.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = ceilLight;
+  // Warm sunlight wash from upper-right
+  const sunWash = ctx.createRadialGradient(820, 0, 20, 820, 0, 550);
+  sunWash.addColorStop(0, 'rgba(255,235,180,0.22)');
+  sunWash.addColorStop(1, 'rgba(255,235,180,0)');
+  ctx.fillStyle = sunWash;
   ctx.fillRect(0, 0, 900, 600);
 
-  // Ceiling with pendant lights
-  ctx.fillStyle = '#0a1018';
-  ctx.fillRect(0, 0, 900, 48);
-  // Ceiling rail
-  ctx.fillStyle = '#2a3540';
-  ctx.fillRect(0, 44, 900, 6);
+  // Ceiling beam
+  ctx.fillStyle = '#c8a878';
+  ctx.fillRect(0, 0, 900, 44);
+  ctx.fillStyle = '#b89060';
+  ctx.fillRect(0, 40, 900, 6);
+  // Ceiling grain lines
+  ctx.strokeStyle = 'rgba(160,110,50,0.15)';
+  ctx.lineWidth = 1;
+  for (let px = 0; px < 900; px += 80) {
+    ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px + 20, 46); ctx.stroke();
+  }
   // Pendant lamps
   const lampPositions = [160, 350, 550, 740];
   for (const lx of lampPositions) {
-    // Wire
-    ctx.strokeStyle = '#3a4550';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(lx, 44); ctx.lineTo(lx, 80); ctx.stroke();
-    // Lamp shade (cone)
-    ctx.fillStyle = '#c8a050';
+    ctx.strokeStyle = '#8a6040';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(lx, 44); ctx.lineTo(lx, 82); ctx.stroke();
+    // Shade
+    ctx.fillStyle = '#d4a840';
     ctx.beginPath();
-    ctx.moveTo(lx - 18, 80); ctx.lineTo(lx + 18, 80); ctx.lineTo(lx + 10, 100); ctx.lineTo(lx - 10, 100);
+    ctx.moveTo(lx - 20, 82); ctx.lineTo(lx + 20, 82);
+    ctx.lineTo(lx + 12, 104); ctx.lineTo(lx - 12, 104);
     ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#e8c070';
+    ctx.fillStyle = '#f0c860';
     ctx.beginPath();
-    ctx.moveTo(lx - 18, 80); ctx.lineTo(lx + 18, 80); ctx.lineTo(lx + 16, 86); ctx.lineTo(lx - 16, 86);
+    ctx.moveTo(lx - 20, 82); ctx.lineTo(lx + 20, 82);
+    ctx.lineTo(lx + 18, 90); ctx.lineTo(lx - 18, 90);
     ctx.closePath(); ctx.fill();
-    // Light glow on floor
-    const glow = ctx.createRadialGradient(lx, 100, 5, lx, 220, 180);
-    glow.addColorStop(0, 'rgba(255,220,120,0.18)');
-    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    // Warm light pool on wall/floor
+    const glow = ctx.createRadialGradient(lx, 104, 4, lx, 240, 200);
+    glow.addColorStop(0, 'rgba(255,230,140,0.28)');
+    glow.addColorStop(1, 'rgba(255,220,100,0)');
     ctx.fillStyle = glow;
-    ctx.fillRect(lx - 180, 80, 360, 360);
+    ctx.fillRect(lx - 200, 82, 400, 380);
     // Bulb
-    ctx.fillStyle = 'rgba(255,255,200,0.9)';
-    ctx.beginPath(); ctx.arc(lx, 99, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,248,200,1)';
+    ctx.beginPath(); ctx.arc(lx, 103, 5, 0, Math.PI * 2); ctx.fill();
   }
 
-  // Back wall with subtle paneling
-  ctx.fillStyle = '#1e2d3d';
-  ctx.fillRect(0, 48, 900, 220);
-  // Wall panel lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-  ctx.lineWidth = 1;
-  for (let px = 100; px < 900; px += 120) {
-    ctx.beginPath(); ctx.moveTo(px, 55); ctx.lineTo(px, 265); ctx.stroke();
+  // Back wall — warm cream with wainscoting
+  ctx.fillStyle = '#f0e4cc';
+  ctx.fillRect(0, 48, 900, 225);
+  // Wainscot panels
+  ctx.strokeStyle = 'rgba(160,120,70,0.18)';
+  ctx.lineWidth = 1.5;
+  for (let px = 60; px < 900; px += 140) {
+    ctx.strokeRect(px, 70, 120, 140);
+    ctx.strokeRect(px + 6, 76, 108, 128);
   }
-  ctx.beginPath(); ctx.moveTo(0, 155); ctx.lineTo(900, 155); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, 170); ctx.lineTo(900, 170); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, 176); ctx.lineTo(900, 176); ctx.stroke();
 
-  // Restaurant name sign — modern, clean
-  ctx.fillStyle = 'rgba(255,220,100,0.1)';
-  ctx.beginPath(); ctx.roundRect(200, 65, 500, 60, 6); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,210,80,0.3)';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.roundRect(200, 65, 500, 60, 6); ctx.stroke();
-  ctx.fillStyle = '#f0d888';
-  ctx.font = 'bold 28px Microsoft YaHei';
+  // Restaurant name sign — warm wood look
+  const signG = ctx.createLinearGradient(200, 65, 200, 128);
+  signG.addColorStop(0, '#c8904a');
+  signG.addColorStop(1, '#a87030');
+  ctx.fillStyle = signG;
+  ctx.beginPath(); ctx.roundRect(202, 66, 496, 60, 5); ctx.fill();
+  ctx.fillStyle = '#d4a060';
+  ctx.beginPath(); ctx.roundRect(202, 66, 496, 10, [5, 5, 0, 0]); ctx.fill();
+  ctx.strokeStyle = 'rgba(80,40,10,0.3)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.roundRect(202, 66, 496, 60, 5); ctx.stroke();
+  ctx.fillStyle = '#fff8e8';
+  ctx.font = 'bold 26px Microsoft YaHei';
   ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(80,30,0,0.4)';
+  ctx.shadowBlur = 4;
   ctx.fillText('🍣  深海寿司  DEEP SEA SUSHI  🐟', 450, 104);
+  ctx.shadowBlur = 0;
   ctx.textAlign = 'left';
 
-  // Floor — dark polished concrete
+  // Floor — warm wood planks
   const floorG = ctx.createLinearGradient(0, 268, 0, 600);
-  floorG.addColorStop(0, '#1c2530');
-  floorG.addColorStop(0.4, '#181f28');
-  floorG.addColorStop(1, '#10161e');
+  floorG.addColorStop(0, '#c8944a');
+  floorG.addColorStop(0.5, '#b8803a');
+  floorG.addColorStop(1, '#a06828');
   ctx.fillStyle = floorG;
   ctx.fillRect(0, 268, 900, 332);
-  // Floor tile grid — subtle
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  // Plank lines
+  ctx.strokeStyle = 'rgba(80,40,10,0.12)';
   ctx.lineWidth = 1;
-  for (let fy = 280; fy < 600; fy += 60) {
+  for (let fy = 268; fy < 600; fy += 44) {
     ctx.beginPath(); ctx.moveTo(0, fy); ctx.lineTo(900, fy); ctx.stroke();
   }
-  for (let fx = 0; fx < 900; fx += 80) {
-    ctx.beginPath(); ctx.moveTo(fx, 268); ctx.lineTo(fx, 600); ctx.stroke();
+  // Plank vertical joints (staggered)
+  for (let row = 0; row < 8; row++) {
+    const fy = 268 + row * 44;
+    const offset = (row % 2) * 90;
+    for (let fx = offset; fx < 900; fx += 180) {
+      ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx, fy + 44); ctx.stroke();
+    }
   }
-  // Floor reflection strip
-  const refG = ctx.createLinearGradient(0, 268, 0, 320);
-  refG.addColorStop(0, 'rgba(100,160,220,0.08)');
-  refG.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = refG;
-  ctx.fillRect(0, 268, 900, 52);
+  // Floor highlight (window light)
+  const floorRef = ctx.createLinearGradient(0, 268, 0, 310);
+  floorRef.addColorStop(0, 'rgba(255,220,150,0.18)');
+  floorRef.addColorStop(1, 'rgba(255,220,150,0)');
+  ctx.fillStyle = floorRef;
+  ctx.fillRect(0, 268, 900, 42);
 
-  // Counter — sleek modern bar
-  ctx.fillStyle = '#0d1520';
-  ctx.beginPath(); ctx.roundRect(300, 268, 300, 60, 4); ctx.fill();
-  // Counter top surface
-  const counterTop = ctx.createLinearGradient(300, 264, 600, 278);
-  counterTop.addColorStop(0, '#2a3c50');
-  counterTop.addColorStop(0.4, '#3a5068');
-  counterTop.addColorStop(1, '#2a3c50');
-  ctx.fillStyle = counterTop;
-  ctx.beginPath(); ctx.roundRect(298, 260, 304, 14, 3); ctx.fill();
-  // Counter top highlight
-  ctx.fillStyle = 'rgba(150,210,255,0.15)';
-  ctx.beginPath(); ctx.roundRect(300, 260, 300, 5, 3); ctx.fill();
-  // Counter front edge
-  ctx.fillStyle = '#1a2840';
-  ctx.fillRect(300, 273, 300, 4);
+  // Counter — light wood + marble top
+  const counterBody = ctx.createLinearGradient(300, 268, 300, 330);
+  counterBody.addColorStop(0, '#d4a050');
+  counterBody.addColorStop(1, '#a87030');
+  ctx.fillStyle = counterBody;
+  ctx.beginPath(); ctx.roundRect(300, 270, 300, 58, 4); ctx.fill();
+  // Marble top
+  const marbleG = ctx.createLinearGradient(298, 258, 602, 274);
+  marbleG.addColorStop(0, '#f8f4ee');
+  marbleG.addColorStop(0.3, '#ece8e0');
+  marbleG.addColorStop(0.6, '#f4f0ea');
+  marbleG.addColorStop(1, '#e8e4dc');
+  ctx.fillStyle = marbleG;
+  ctx.beginPath(); ctx.roundRect(298, 258, 304, 16, 3); ctx.fill();
+  // Marble veins
+  ctx.strokeStyle = 'rgba(160,150,140,0.25)';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(320, 260); ctx.bezierCurveTo(380, 266, 420, 262, 480, 268); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(500, 259); ctx.bezierCurveTo(540, 265, 560, 261, 590, 268); ctx.stroke();
+  ctx.strokeStyle = 'rgba(200,190,180,0.3)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.roundRect(298, 258, 304, 16, 3); ctx.stroke();
 
   // Tables
   for (const t of GS.tables) drawTable(t);
 
-  // ── INVENTORY PANEL (left) — modern card ──
-  ctx.fillStyle = 'rgba(8,14,22,0.92)';
+  // ── INVENTORY PANEL (left) — warm wood card ──
+  ctx.fillStyle = 'rgba(255,248,235,0.94)';
   ctx.beginPath(); ctx.roundRect(10, 280, 188, 310, 10); ctx.fill();
-  ctx.strokeStyle = 'rgba(60,120,200,0.25)';
+  ctx.strokeStyle = 'rgba(160,110,50,0.25)';
   ctx.lineWidth = 1;
   ctx.beginPath(); ctx.roundRect(10, 280, 188, 310, 10); ctx.stroke();
-  // Panel top accent line
-  ctx.fillStyle = 'rgba(80,160,255,0.6)';
+  ctx.fillStyle = '#c87830';
   ctx.beginPath(); ctx.roundRect(10, 280, 188, 3, [3, 3, 0, 0]); ctx.fill();
 
-  // Panel title
-  ctx.fillStyle = '#7ab8f5';
+  ctx.fillStyle = '#8a4818';
   ctx.font = 'bold 13px Microsoft YaHei';
-  ctx.fillText('INVENTORY', 18, 301);
-  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillText('📦 仓库', 18, 301);
+  ctx.fillStyle = 'rgba(160,110,50,0.2)';
   ctx.fillRect(10, 308, 188, 1);
 
   const warehouseByType = {};
@@ -1645,12 +1670,12 @@ function drawRestaurant() {
       totalItems++;
       const isSelected = GS.preparingDish && GS.preparingDish.type === ft.type;
       if (isSelected) {
-        ctx.fillStyle = 'rgba(255,200,50,0.12)';
+        ctx.fillStyle = 'rgba(220,140,30,0.14)';
         ctx.beginPath(); ctx.roundRect(14, wy - 14, 180, 20, 4); ctx.fill();
       }
-      ctx.fillStyle = isSelected ? '#ffd740' : '#c8dff0';
+      ctx.fillStyle = isSelected ? '#c06010' : '#4a3020';
       ctx.fillText(`${ft.emoji} ${ft.name}  ×${cnt}`, 20, wy);
-      ctx.fillStyle = isSelected ? '#ff8888' : '#8899bb';
+      ctx.fillStyle = isSelected ? '#e05010' : '#c05830';
       ctx.font = '11px Microsoft YaHei';
       ctx.fillText('[出售]', 160, wy);
       ctx.font = '13px Microsoft YaHei';
@@ -1658,7 +1683,7 @@ function drawRestaurant() {
     }
   }
   if (totalItems === 0) {
-    ctx.fillStyle = '#445566';
+    ctx.fillStyle = '#b09070';
     ctx.font = '13px Microsoft YaHei';
     ctx.fillText('仓库空空如也...', 28, 345);
     ctx.fillText('去潜水捕鱼吧！', 32, 368);
@@ -1666,32 +1691,32 @@ function drawRestaurant() {
 
   // Sell button
   const sellG = ctx.createLinearGradient(16, 552, 96, 576);
-  sellG.addColorStop(0, '#1a9e55'); sellG.addColorStop(1, '#117a3d');
+  sellG.addColorStop(0, '#2aaa60'); sellG.addColorStop(1, '#168840');
   ctx.fillStyle = sellG;
   ctx.beginPath(); ctx.roundRect(16, 550, 82, 26, 6); ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
   ctx.beginPath(); ctx.roundRect(16, 550, 82, 11, [6, 6, 0, 0]); ctx.fill();
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 12px Microsoft YaHei';
   ctx.fillText('全部出售', 30, 567);
 
-  ctx.fillStyle = '#f0c040';
+  ctx.fillStyle = '#8a4010';
   ctx.font = 'bold 14px Microsoft YaHei';
   ctx.fillText(`💰 ${GS.coins}`, 18, 585);
 
-  // ── MENU PANEL (right) — modern card ──
-  ctx.fillStyle = 'rgba(8,14,22,0.92)';
+  // ── MENU PANEL (right) — warm card ──
+  ctx.fillStyle = 'rgba(255,248,235,0.94)';
   ctx.beginPath(); ctx.roundRect(704, 280, 186, 210, 10); ctx.fill();
-  ctx.strokeStyle = 'rgba(200,160,40,0.25)';
+  ctx.strokeStyle = 'rgba(160,110,50,0.25)';
   ctx.lineWidth = 1;
   ctx.beginPath(); ctx.roundRect(704, 280, 186, 210, 10); ctx.stroke();
-  ctx.fillStyle = 'rgba(200,160,50,0.6)';
+  ctx.fillStyle = '#c87830';
   ctx.beginPath(); ctx.roundRect(704, 280, 186, 3, [3, 3, 0, 0]); ctx.fill();
 
-  ctx.fillStyle = '#d4b04a';
+  ctx.fillStyle = '#8a4818';
   ctx.font = 'bold 13px Microsoft YaHei';
-  ctx.fillText('TODAY\'S MENU', 715, 301);
-  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillText('📋 今日菜单', 715, 301);
+  ctx.fillStyle = 'rgba(160,110,50,0.2)';
   ctx.fillRect(704, 308, 186, 1);
 
   ctx.font = '12px Microsoft YaHei';
@@ -1699,121 +1724,144 @@ function drawRestaurant() {
   for (const dish of SUSHI_MENU) {
     const hasIngredient = (warehouseByType[dish.fishType] || 0) > 0;
     if (hasIngredient) {
-      ctx.fillStyle = 'rgba(80,200,120,0.08)';
+      ctx.fillStyle = 'rgba(80,180,80,0.1)';
       ctx.beginPath(); ctx.roundRect(707, my - 13, 180, 18, 3); ctx.fill();
     }
-    ctx.fillStyle = hasIngredient ? '#b0e8c0' : '#3a4a5a';
+    ctx.fillStyle = hasIngredient ? '#2a6a20' : '#b09878';
     ctx.fillText(`${dish.emoji} ${dish.name}`, 712, my);
-    ctx.fillStyle = hasIngredient ? '#f0c040' : '#3a4a5a';
+    ctx.fillStyle = hasIngredient ? '#b86010' : '#b09878';
     ctx.fillText(`¥${dish.price}`, 852, my);
     my += 24;
   }
 
   drawUpgradeShop();
 
-  // Order bubbles — always on top
+  ctx.restore(); // end restaurant scale
+
+  // ── ORDER BUBBLES — drawn in SCREEN SPACE, above everything ──
+  // Convert table coords (900×600 space) → screen coords
+  const rScale = Math.min(VW / 900, VH / 600);
+  const rOffX = (VW - 900 * rScale) / 2;
+  const rOffY = (VH - 600 * rScale) / 2;
+  const HEAD_R = 18, LEG_H = 18, BODY_H = 34;
+  const headY_local = -LEG_H - BODY_H - HEAD_R + 4;  // in 900×600 space, relative to feet
+
   for (const t of GS.tables) {
     if (t.customer && t.customer.order && t.customer.state === 'waiting') {
       const c = t.customer;
-      const x = t.x, y = t.y + 50;
-      const HEAD_R = 18, LEG_H = 18, BODY_H = 34;
-      const headY = -LEG_H - BODY_H - HEAD_R + 4;
+      // feet position in 900×600 space
+      const feetX = t.x;
+      const feetY = t.y + 50;
+      // head position in 900×600 space
+      const headX_900 = feetX;
+      const headY_900 = feetY + headY_local;
+      // convert to screen
+      const sx = rOffX + headX_900 * rScale;
+      const sy = rOffY + headY_900 * rScale;
+      // bubble size in screen pixels
+      const bw = 100 * rScale, bh = 48 * rScale;
+      const bx = sx + 14 * rScale, by = sy - (HEAD_R + 52) * rScale;
+
       ctx.save();
-      ctx.translate(x, y);
-      const bw = 96, bh = 44, bx = 14, by = headY - HEAD_R - 50;
-      ctx.fillStyle = 'rgba(0,0,0,0.25)';
-      ctx.beginPath(); ctx.roundRect(bx + 2, by + 3, bw, bh, 10); ctx.fill();
-      ctx.fillStyle = 'rgba(20,32,50,0.96)';
-      ctx.strokeStyle = 'rgba(100,160,255,0.4)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 10); ctx.fill(); ctx.stroke();
-      // Tail
-      ctx.fillStyle = 'rgba(20,32,50,0.96)';
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.beginPath(); ctx.roundRect(bx + 2, by + 3, bw, bh, 10 * rScale); ctx.fill();
+      // Bubble body — white card
+      ctx.fillStyle = 'rgba(255,255,255,0.98)';
+      ctx.strokeStyle = 'rgba(200,150,80,0.5)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 10 * rScale); ctx.fill(); ctx.stroke();
+      // Tail pointing down-left
+      ctx.fillStyle = 'rgba(255,255,255,0.98)';
       ctx.beginPath();
-      ctx.moveTo(bx + 8, by + bh); ctx.lineTo(2, by + bh + 10); ctx.lineTo(bx + 22, by + bh);
+      ctx.moveTo(bx + 10 * rScale, by + bh);
+      ctx.lineTo(sx + 4 * rScale, by + bh + 12 * rScale);
+      ctx.lineTo(bx + 24 * rScale, by + bh);
       ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#e0eeff';
-      ctx.font = 'bold 13px Microsoft YaHei';
-      ctx.fillText(c.order.emoji + ' ' + c.order.name, bx + 8, by + 18);
-      // Patience bar
-      ctx.fillStyle = 'rgba(255,255,255,0.08)';
-      ctx.beginPath(); ctx.roundRect(bx + 8, by + 27, 72, 7, 3); ctx.fill();
-      const pColor = c.patience > 0.5 ? '#44dd66' : c.patience > 0.25 ? '#ffaa22' : '#ff4444';
-      const pG = ctx.createLinearGradient(bx + 8, 0, bx + 8 + 72 * c.patience, 0);
+      ctx.strokeStyle = 'rgba(200,150,80,0.3)'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(bx + 10 * rScale, by + bh);
+      ctx.lineTo(sx + 4 * rScale, by + bh + 12 * rScale);
+      ctx.lineTo(bx + 24 * rScale, by + bh);
+      ctx.stroke();
+      // Order text
+      ctx.fillStyle = '#2a1a08';
+      ctx.font = `bold ${Math.round(13 * rScale)}px Microsoft YaHei`;
+      ctx.fillText(c.order.emoji + ' ' + c.order.name, bx + 8 * rScale, by + 18 * rScale);
+      // Patience bar track
+      ctx.fillStyle = 'rgba(0,0,0,0.08)';
+      ctx.beginPath(); ctx.roundRect(bx + 8 * rScale, by + 28 * rScale, 76 * rScale, 8 * rScale, 3 * rScale); ctx.fill();
+      const pColor = c.patience > 0.5 ? '#44cc55' : c.patience > 0.25 ? '#ffaa22' : '#ff3333';
+      const pG = ctx.createLinearGradient(bx + 8 * rScale, 0, bx + (8 + 76 * c.patience) * rScale, 0);
       pG.addColorStop(0, pColor); pG.addColorStop(1, shadeColor(pColor, 0.75));
       ctx.fillStyle = pG;
-      ctx.beginPath(); ctx.roundRect(bx + 8, by + 27, 72 * c.patience, 7, 3); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(bx + 8 * rScale, by + 28 * rScale, 76 * c.patience * rScale, 8 * rScale, 3 * rScale); ctx.fill();
       ctx.restore();
     }
   }
-
-  ctx.restore(); // end restaurant scale
 }
 
 function drawTable(t) {
   const { x, y, customer } = t;
 
   // Floor shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
   ctx.beginPath();
   ctx.ellipse(x, y + 52, 52, 10, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Chair legs — thin dark metal
+  // Chair legs — warm wood
   for (const side of [-1, 1]) {
     const cx = x + side * 38;
-    ctx.fillStyle = '#1a2230';
+    ctx.fillStyle = '#7a4818';
     ctx.fillRect(cx - 3, y + 28, 6, 24);
-    ctx.fillStyle = 'rgba(100,150,200,0.15)';
+    ctx.fillStyle = 'rgba(255,200,120,0.2)';
     ctx.fillRect(cx - 1, y + 28, 2, 24);
   }
 
-  // Table leg — single pedestal
-  ctx.fillStyle = '#1e2c3a';
+  // Table leg — single pedestal, wood
+  ctx.fillStyle = '#8a5020';
   ctx.fillRect(x - 5, y + 22, 10, 30);
-  ctx.fillStyle = 'rgba(100,180,255,0.1)';
+  ctx.fillStyle = 'rgba(255,200,100,0.2)';
   ctx.fillRect(x - 2, y + 22, 3, 30);
 
-  // Chair seats — dark upholstered
+  // Chair seats — warm fabric cushion
   for (const side of [-1, 1]) {
     const cx = x + side * 38;
     const cy = y + 24;
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillStyle = 'rgba(80,30,0,0.2)';
     ctx.beginPath(); ctx.ellipse(cx + 2, cy + 2, 14, 7, 0, 0, Math.PI * 2); ctx.fill();
     const chairG = ctx.createRadialGradient(cx - 4, cy - 2, 1, cx, cy, 14);
-    chairG.addColorStop(0, '#2a3a4a');
-    chairG.addColorStop(1, '#141e2a');
+    chairG.addColorStop(0, '#c87840');
+    chairG.addColorStop(1, '#8a4820');
     ctx.fillStyle = chairG;
     ctx.beginPath(); ctx.ellipse(cx, cy, 14, 7, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(80,130,200,0.2)';
+    ctx.strokeStyle = 'rgba(180,100,40,0.3)';
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.ellipse(cx, cy, 14, 7, 0, 0, Math.PI * 2); ctx.stroke();
-    // Seat cushion highlight
-    ctx.fillStyle = 'rgba(100,160,220,0.12)';
+    ctx.fillStyle = 'rgba(255,220,150,0.22)';
     ctx.beginPath(); ctx.ellipse(cx - 4, cy - 2, 6, 3, -0.3, 0, Math.PI * 2); ctx.fill();
   }
 
   // Table top shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
   ctx.beginPath(); ctx.ellipse(x + 3, y + 23, 48, 20, 0, 0, Math.PI * 2); ctx.fill();
 
-  // Table surface — dark glass/stone
+  // Table surface — light wood
   const tableG = ctx.createRadialGradient(x - 15, y + 8, 4, x, y + 20, 50);
-  tableG.addColorStop(0, '#2e4055');
-  tableG.addColorStop(0.5, '#1e2e40');
-  tableG.addColorStop(1, '#121e2c');
+  tableG.addColorStop(0, '#e8b870');
+  tableG.addColorStop(0.5, '#c89448');
+  tableG.addColorStop(1, '#a07030');
   ctx.fillStyle = tableG;
   ctx.beginPath(); ctx.ellipse(x, y + 20, 47, 21, 0, 0, Math.PI * 2); ctx.fill();
-  // Table edge glow
-  ctx.strokeStyle = 'rgba(80,140,220,0.3)';
+  ctx.strokeStyle = 'rgba(180,120,50,0.4)';
   ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.ellipse(x, y + 20, 47, 21, 0, 0, Math.PI * 2); ctx.stroke();
-  // Table surface reflection
-  ctx.fillStyle = 'rgba(100,180,255,0.06)';
+  ctx.fillStyle = 'rgba(255,230,160,0.22)';
   ctx.beginPath(); ctx.ellipse(x - 10, y + 14, 24, 8, -0.3, 0, Math.PI * 2); ctx.fill();
-  // Plate/setting
-  ctx.fillStyle = 'rgba(50,80,110,0.8)';
+  // Plate
+  ctx.fillStyle = 'rgba(255,248,235,0.9)';
   ctx.beginPath(); ctx.ellipse(x, y + 20, 11, 5, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = 'rgba(120,180,240,0.3)';
+  ctx.strokeStyle = 'rgba(180,140,80,0.3)';
   ctx.lineWidth = 1;
   ctx.beginPath(); ctx.ellipse(x, y + 20, 11, 5, 0, 0, Math.PI * 2); ctx.stroke();
 
@@ -2088,18 +2136,17 @@ function drawCustomer(c, x, y) {
 }
 
 function drawUpgradeShop() {
-  // Panel background
-  ctx.fillStyle = 'rgba(8,14,22,0.92)';
+  ctx.fillStyle = 'rgba(255,248,235,0.94)';
   ctx.beginPath(); ctx.roundRect(205, 540, 500, 52, 8); ctx.fill();
-  ctx.strokeStyle = 'rgba(60,100,160,0.25)';
+  ctx.strokeStyle = 'rgba(160,110,50,0.25)';
   ctx.lineWidth = 1;
   ctx.beginPath(); ctx.roundRect(205, 540, 500, 52, 8); ctx.stroke();
-  ctx.fillStyle = 'rgba(60,120,220,0.5)';
+  ctx.fillStyle = '#c87830';
   ctx.beginPath(); ctx.roundRect(205, 540, 500, 3, [3, 3, 0, 0]); ctx.fill();
 
-  ctx.fillStyle = '#7aa0cc';
+  ctx.fillStyle = '#8a4818';
   ctx.font = 'bold 12px Microsoft YaHei';
-  ctx.fillText('UPGRADES', 214, 558);
+  ctx.fillText('🔧 升级', 214, 558);
 
   const upgrades = [
     { label: '🎣 渔网', desc: '捕鱼范围 +20%', cost: 200, key: 'netLevel' },
@@ -2110,19 +2157,16 @@ function drawUpgradeShop() {
   let ux = 295;
   for (const u of upgrades) {
     const canAfford = GS.coins >= u.cost;
-    ctx.fillStyle = canAfford ? 'rgba(20,80,50,0.85)' : 'rgba(20,25,35,0.85)';
+    ctx.fillStyle = canAfford ? 'rgba(40,140,70,0.15)' : 'rgba(0,0,0,0.06)';
     ctx.beginPath(); ctx.roundRect(ux, 543, 138, 44, 6); ctx.fill();
-    ctx.strokeStyle = canAfford ? 'rgba(60,200,100,0.3)' : 'rgba(50,70,100,0.3)';
+    ctx.strokeStyle = canAfford ? 'rgba(40,160,80,0.4)' : 'rgba(160,120,70,0.2)';
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.roundRect(ux, 543, 138, 44, 6); ctx.stroke();
-    // top highlight
-    ctx.fillStyle = canAfford ? 'rgba(100,255,150,0.07)' : 'rgba(255,255,255,0.03)';
-    ctx.beginPath(); ctx.roundRect(ux + 1, 544, 136, 14, [5, 5, 0, 0]); ctx.fill();
 
-    ctx.fillStyle = canAfford ? '#c8f0d8' : '#506070';
+    ctx.fillStyle = canAfford ? '#1a6a28' : '#a08060';
     ctx.font = 'bold 12px Microsoft YaHei';
     ctx.fillText(u.label, ux + 8, 559);
-    ctx.fillStyle = canAfford ? '#f0c040' : '#405060';
+    ctx.fillStyle = canAfford ? '#8a4010' : '#b0a090';
     ctx.font = '11px Microsoft YaHei';
     ctx.fillText(`¥${u.cost}  ${u.desc}`, ux + 8, 576);
     ux += 155;
@@ -2280,50 +2324,63 @@ function drawTitle() {
   ctx.textAlign = 'left';
 
   // ── START BUTTON ──
-  const btnW = 200, btnH = 48, btnX = VW / 2 - btnW / 2, btnY = VH * 0.56;
+  const btnW = 190, btnH = 50, btnX = VW / 2 - btnW / 2, btnY = VH * 0.56;
   const hovering = mouseScreen.x >= btnX && mouseScreen.x <= btnX + btnW &&
                    mouseScreen.y >= btnY && mouseScreen.y <= btnY + btnH;
-  const btnOffsetY = hovering ? -2 : 0;
+
+  // Press ripple — records time of last press for ink-spread animation
+  const pressAge = GS.time - (GS._btnPressT || -99);
+  const rippleR = pressAge < 0.5 ? pressAge / 0.5 * (btnW * 0.9) : 0;
+  const rippleA = pressAge < 0.5 ? (1 - pressAge / 0.5) * 0.35 : 0;
 
   ctx.save();
-  ctx.translate(btnX, btnY + btnOffsetY);
+  ctx.translate(btnX, btnY);
 
-  // Drop shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.45)';
-  ctx.fillRect(3, 5, btnW, btnH);
-  // Button body
-  ctx.fillStyle = '#c83030';
-  ctx.fillRect(0, 0, btnW, btnH);
-  // Top edge highlight
-  ctx.fillStyle = '#e85050';
-  ctx.fillRect(0, 0, btnW, 8);
-  // Bottom edge shadow
-  ctx.fillStyle = '#8a1818';
-  ctx.fillRect(0, btnH - 6, btnW, 6);
-  // Hover glow border
-  if (hovering) {
-    ctx.strokeStyle = 'rgba(255,160,160,0.85)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, btnW, btnH);
+  // Ink-spread ripple (drawn behind button so clipped by save/restore)
+  if (rippleR > 0) {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, btnW, btnH);
+    ctx.clip();
+    ctx.fillStyle = `rgba(255,255,255,${rippleA})`;
+    ctx.beginPath(); ctx.arc(btnW / 2, btnH / 2, rippleR, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
   }
-  // Text
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 20px "Courier New", monospace';
+
+  // Button body — flat with hand-drawn border feel
+  ctx.fillStyle = hovering ? '#e03030' : '#c82020';
+  ctx.fillRect(0, 0, btnW, btnH);
+
+  // Pixel-art style border: 4 separate edge rects (no corner overlap = hand-drawn feel)
+  const bc = hovering ? 'rgba(255,210,210,0.9)' : 'rgba(255,160,160,0.5)';
+  ctx.fillStyle = bc;
+  ctx.fillRect(0, 0, btnW, 2);          // top
+  ctx.fillRect(0, btnH - 2, btnW, 2);   // bottom
+  ctx.fillRect(0, 2, 2, btnH - 4);      // left
+  ctx.fillRect(btnW - 2, 2, 2, btnH - 4); // right
+
+  // Inner shadow (depth without glow)
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx.fillRect(2, btnH - 8, btnW - 4, 6);
+
+  // Text — no triangle, just plain characters
+  ctx.fillStyle = '#fff';
+  ctx.font = hovering ? 'bold 19px "Courier New", monospace' : 'bold 18px "Courier New", monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('▶  开始游戏', btnW / 2, btnH / 2 + 7);
+  ctx.fillText('开始游戏', btnW / 2, btnH / 2 + 7);
   ctx.textAlign = 'left';
 
   ctx.restore();
 
-  // Subtitle hint
-  ctx.fillStyle = 'rgba(180,220,255,0.6)';
-  ctx.font = '13px "Courier New", monospace';
+  // KEY HINT — pixel style, below button
+  ctx.fillStyle = hovering ? 'rgba(255,200,200,0.7)' : 'rgba(200,220,255,0.45)';
+  ctx.font = '12px "Courier New", monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('移动鼠标探索海洋  点击捕鱼  上岸经营寿司店', VW / 2, btnY + btnH + 28);
+  ctx.fillText('[ CLICK  /  SPACE  /  ENTER ]', VW / 2, btnY + btnH + 22);
+  ctx.fillText('移动鼠标探索海洋  点击捕鱼  上岸经营寿司店', VW / 2, btnY + btnH + 40);
   ctx.textAlign = 'left';
 
   // Store button bounds for click detection
-  GS._titleBtnBounds = { x: btnX, y: btnY + btnOffsetY, w: btnW, h: btnH };
+  GS._titleBtnBounds = { x: btnX, y: btnY, w: btnW, h: btnH };
 }
 
 // ============ TRANSITION ============
@@ -2561,6 +2618,7 @@ document.addEventListener('keydown', e => {
   keys[e.key] = true;
   if (GS.scene === 'title' && (e.key === ' ' || e.key === 'Enter')) {
     e.preventDefault();
+    GS._btnPressT = GS.time;
     startGame();
     return;
   }
@@ -2587,6 +2645,7 @@ canvas.addEventListener('click', e => {
   if (GS.scene === 'title') {
     const b = GS._titleBtnBounds;
     if (b && e.clientX >= b.x && e.clientX <= b.x + b.w && e.clientY >= b.y && e.clientY <= b.y + b.h) {
+      GS._btnPressT = GS.time;
       startGame();
     }
     return;
