@@ -63,14 +63,29 @@ let cam = { x: 0, y: 0 };
 let camTarget = { x: 0, y: 0 };
 let mouseScreen = { x: 0, y: 0 };
 
+// Dynamic world size — portrait vs landscape
+let currentWW = WW;
+let currentWH = WH;
+function updateWorldSize() {
+  currentWW = (VW < VH) ? 1200 : WW;
+  currentWH = (VW < VH) ? 2800 : WH;
+}
+updateWorldSize();
+
+// Touch state — drag vs tap discrimination
+let touchStartPos = null;
+let touchIsDrag = false;
+let touchActive = false;
+
 window.addEventListener('resize', () => {
   VW = window.innerWidth;
   VH = window.innerHeight;
   canvas.width = VW;
   canvas.height = VH;
+  updateWorldSize();
   // Re-clamp camera so it stays within world bounds after resize
-  cam.x = Math.max(0, Math.min(WW - VW, cam.x));
-  cam.y = Math.max(0, Math.min(WH - VH, cam.y));
+  cam.x = Math.max(0, Math.min(currentWW - VW, cam.x));
+  cam.y = Math.max(0, Math.min(currentWH - VH, cam.y));
   camTarget.x = cam.x;
   camTarget.y = cam.y;
   mouseScreen.x = VW / 2;
@@ -149,51 +164,52 @@ const ZONES = [
 function generateDecorations() {
   decorations = [];
   const z = GS.zone;
+  const cW = currentWW, cH = currentWH;
 
   // 海草 (更多，分布更广)
   for (let i = 0; i < 20; i++) {
-    const x = Math.random() * W;
-    decorations.push({ type: 'seaweed', x, y: H, height: 50 + Math.random() * 110, phase: Math.random() * Math.PI * 2, color: z === 2 ? '#1a4a2a' : '#2d8a4a' });
+    const x = Math.random() * cW;
+    decorations.push({ type: 'seaweed', x, y: cH, height: 50 + Math.random() * 110, phase: Math.random() * Math.PI * 2, color: z === 2 ? '#1a4a2a' : '#2d8a4a' });
   }
 
   // 珊瑚 (各区域都有)
   const coralCount = z === 0 ? 6 : z === 1 ? 14 : 5;
   for (let i = 0; i < coralCount; i++) {
-    decorations.push({ type: 'coral', x: Math.random() * W, y: H - 30 + Math.random() * 20, size: 22 + Math.random() * 35, color: z === 0 ? '#ff9b6d' : z === 1 ? '#ff6b9d' : '#8855ff' });
+    decorations.push({ type: 'coral', x: Math.random() * cW, y: cH - 30 + Math.random() * 20, size: 22 + Math.random() * 35, color: z === 0 ? '#ff9b6d' : z === 1 ? '#ff6b9d' : '#8855ff' });
   }
 
   // 岩石
   for (let i = 0; i < 10; i++) {
-    decorations.push({ type: 'rock', x: Math.random() * W, y: H - 20 + Math.random() * 30, size: 18 + Math.random() * 32, color: z === 2 ? '#223344' : '#445566' });
+    decorations.push({ type: 'rock', x: Math.random() * cW, y: cH - 20 + Math.random() * 30, size: 18 + Math.random() * 32, color: z === 2 ? '#223344' : '#445566' });
   }
 
   // 海星 (浅海、珊瑚礁)
   if (z <= 1) {
     for (let i = 0; i < 7; i++) {
-      decorations.push({ type: 'starfish', x: 40 + Math.random() * (W - 80), y: H - 15, size: 12 + Math.random() * 14, color: z === 0 ? '#ff7744' : '#ff44aa', angle: Math.random() * Math.PI });
+      decorations.push({ type: 'starfish', x: 40 + Math.random() * (cW - 80), y: cH - 15, size: 12 + Math.random() * 14, color: z === 0 ? '#ff7744' : '#ff44aa', angle: Math.random() * Math.PI });
     }
   }
 
   // 扇形珊瑚 (珊瑚礁)
   if (z === 1) {
     for (let i = 0; i < 5; i++) {
-      decorations.push({ type: 'fan_coral', x: Math.random() * W, y: H - 10, height: 80 + Math.random() * 80, color: ['#ff6b9d','#ff9933','#33ccff','#ff55dd'][Math.floor(Math.random()*4)], phase: Math.random() * Math.PI * 2 });
+      decorations.push({ type: 'fan_coral', x: Math.random() * cW, y: cH - 10, height: 80 + Math.random() * 80, color: ['#ff6b9d','#ff9933','#33ccff','#ff55dd'][Math.floor(Math.random()*4)], phase: Math.random() * Math.PI * 2 });
     }
   }
 
   // 海底城堡 (珊瑚礁或随机)
   if (z >= 1 || Math.random() < 0.5) {
-    decorations.push({ type: 'castle', x: 180 + Math.random() * (W - 360), y: H - 10 });
+    decorations.push({ type: 'castle', x: 180 + Math.random() * (cW - 360), y: cH - 10 });
   }
 
   // 沉船 (深海为主，珊瑚礁偶尔有)
   if (z === 2 || (z === 1 && Math.random() < 0.6)) {
-    decorations.push({ type: 'shipwreck', x: 100 + Math.random() * (W - 300), y: H - 20 });
+    decorations.push({ type: 'shipwreck', x: 100 + Math.random() * (cW - 300), y: cH - 20 });
   }
 
   // 气泡柱 (随机位置从海底冒出)
   for (let i = 0; i < 4; i++) {
-    decorations.push({ type: 'vent', x: Math.random() * W, y: H - 10, phase: Math.random() * Math.PI * 2 });
+    decorations.push({ type: 'vent', x: Math.random() * cW, y: cH - 10, phase: Math.random() * Math.PI * 2 });
   }
 }
 
@@ -208,24 +224,34 @@ function spawnFish(forceInViewport) {
     if (r < cumulative) { type = ft; break; }
   }
   const spd = type.speed * (0.8 + Math.random() * 0.4);
-  let spawnX, spawnY, vxSign;
+  let spawnX, spawnY, vxSign, vySign;
+  const portrait = VW < VH;
   if (forceInViewport) {
     spawnX = cam.x + 60 + Math.random() * Math.max(1, VW - 120);
     spawnY = cam.y + 80 + Math.random() * Math.max(1, VH - 200);
     vxSign = Math.random() < 0.5 ? -1 : 1;
+    vySign = Math.random() < 0.5 ? -1 : 1;
+  } else if (portrait) {
+    // Portrait: fish swim vertically (enter from top/bottom)
+    const side = Math.random() < 0.5 ? -1 : 1;
+    spawnX = cam.x + 60 + Math.random() * Math.max(1, VW - 120);
+    spawnY = side < 0 ? cam.y - 80 : cam.y + VH + 80;
+    vxSign = Math.random() < 0.5 ? -1 : 1;
+    vySign = side;
   } else {
     const side = Math.random() < 0.5 ? -1 : 1;
     spawnX = side < 0 ? cam.x - 80 : cam.x + VW + 80;
     spawnY = cam.y + 80 + Math.random() * Math.max(1, VH - 200);
     vxSign = side;
+    vySign = Math.random() < 0.5 ? -1 : 1;
   }
   fishes.push({
     id: Math.random().toString(36).substr(2),
     ...type,
     x: spawnX,
     y: spawnY,
-    vx: vxSign * spd,
-    vy: (Math.random() - 0.5) * 0.6,
+    vx: portrait && !forceInViewport ? (Math.random() - 0.5) * spd : vxSign * spd,
+    vy: portrait && !forceInViewport ? vySign * spd : (Math.random() - 0.5) * 0.6,
     phase: Math.random() * Math.PI * 2,
     hp: type.clicks,
     maxHp: type.clicks,
@@ -246,8 +272,8 @@ function drawBackground() {
 
   // Fill entire viewport — gradient spans world height but we draw over viewport
   // Use cam.y to sample the right part of the vertical gradient
-  const gradTop = cam.y / WH;           // 0 at top, 1 at bottom
-  const gradBot = (cam.y + VH) / WH;
+  const gradTop = cam.y / currentWH;           // 0 at top, 1 at bottom
+  const gradBot = (cam.y + VH) / currentWH;
   const grad = ctx.createLinearGradient(0, 0, 0, VH);
   grad.addColorStop(0, shadeColor(z.bgTop, darkMult * (1 - gradTop * 0.4)));
   grad.addColorStop(0.5, shadeColor(z.bgTop, darkMult * (1 - (gradTop + gradBot) * 0.2)));
@@ -269,17 +295,17 @@ function drawBackground() {
     const rayCount = GS.zone === 0 ? 9 : 5;
     const rayAlpha = GS.zone === 0 ? 0.07 : 0.04;
     for (let i = 0; i < rayCount; i++) {
-      const rx = 80 + i * (WW / rayCount) + Math.sin(GS.time * 0.4 + i * 1.3) * 30;
+      const rx = 80 + i * (currentWW / rayCount) + Math.sin(GS.time * 0.4 + i * 1.3) * 30;
       const rayWidth = 45 + Math.sin(GS.time * 0.3 + i) * 18;
-      const grad2 = ctx.createLinearGradient(rx, 0, rx, WH);
+      const grad2 = ctx.createLinearGradient(rx, 0, rx, currentWH);
       grad2.addColorStop(0, `rgba(180,240,255,${rayAlpha})`);
       grad2.addColorStop(0.4, `rgba(120,200,255,${rayAlpha * 0.5})`);
       grad2.addColorStop(1, 'rgba(0,100,200,0)');
       ctx.fillStyle = grad2;
       ctx.beginPath();
       ctx.moveTo(rx - rayWidth * 0.3, 0);
-      ctx.lineTo(rx + rayWidth + Math.sin(GS.time * 0.2 + i) * 20, WH);
-      ctx.lineTo(rx - rayWidth * 0.5 + Math.sin(GS.time * 0.2 + i) * 20, WH);
+      ctx.lineTo(rx + rayWidth + Math.sin(GS.time * 0.2 + i) * 20, currentWH);
+      ctx.lineTo(rx - rayWidth * 0.5 + Math.sin(GS.time * 0.2 + i) * 20, currentWH);
       ctx.lineTo(rx - rayWidth * 0.6, 0);
       ctx.closePath();
       ctx.fill();
@@ -291,7 +317,7 @@ function drawBackground() {
     ctx.save();
     ctx.globalAlpha = 0.04;
     for (let i = 0; i < 16; i++) {
-      const cx = ((GS.time * 25 + i * 95) % (WW + 100)) - 50;
+      const cx = ((GS.time * 25 + i * 95) % (currentWW + 100)) - 50;
       const cy = 30 + (i % 4) * 80 + Math.sin(GS.time + i) * 18;
       const r = 22 + Math.sin(GS.time * 0.7 + i) * 9;
       const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
@@ -309,8 +335,8 @@ function drawBackground() {
   if (GS.zone === 2) {
     ctx.save();
     for (let i = 0; i < 22; i++) {
-      const px = (Math.sin(i * 2.3 + GS.time * 0.1) * 0.5 + 0.5) * WW;
-      const py = (Math.sin(i * 1.7 + GS.time * 0.08) * 0.5 + 0.5) * (WH - 80) + 30;
+      const px = (Math.sin(i * 2.3 + GS.time * 0.1) * 0.5 + 0.5) * currentWW;
+      const py = (Math.sin(i * 1.7 + GS.time * 0.08) * 0.5 + 0.5) * (currentWH - 80) + 30;
       const pr = 2 + Math.sin(GS.time * 2 + i) * 1;
       const glow = ctx.createRadialGradient(px, py, 0, px, py, pr * 5);
       const hue = (i * 40 + GS.time * 20) % 360;
@@ -327,7 +353,7 @@ function drawBackground() {
   if (GS.weather === 'current') {
     ctx.save();
     for (let i = 0; i < 8; i++) {
-      const cx = ((GS.time * 90 + i * 200) % (WW + 200)) - 100;
+      const cx = ((GS.time * 90 + i * 200) % (currentWW + 200)) - 100;
       const cy = 80 + i * 90 + Math.sin(i * 1.2) * 40;
       const cg = ctx.createLinearGradient(cx - 20, cy, cx + 100, cy);
       cg.addColorStop(0, 'rgba(100,200,255,0)');
@@ -346,15 +372,15 @@ function drawBackground() {
   ctx.save();
   ctx.fillStyle = isDeep ? 'rgba(0,0,0,0.6)' : 'rgba(80,50,10,0.35)';
   ctx.beginPath();
-  ctx.moveTo(0, WH);
-  for (let x = 0; x <= WW; x += 25) {
-    ctx.lineTo(x, WH - 30 + Math.sin(x * 0.035 + GS.time * 0.15) * 8 + 6);
+  ctx.moveTo(0, currentWH);
+  for (let x = 0; x <= currentWW; x += 25) {
+    ctx.lineTo(x, currentWH - 30 + Math.sin(x * 0.035 + GS.time * 0.15) * 8 + 6);
   }
-  ctx.lineTo(WW, WH); ctx.lineTo(0, WH);
+  ctx.lineTo(currentWW, currentWH); ctx.lineTo(0, currentWH);
   ctx.closePath();
   ctx.fill();
 
-  const sandGrad = ctx.createLinearGradient(0, WH - 55, 0, WH);
+  const sandGrad = ctx.createLinearGradient(0, currentWH - 55, 0, currentWH);
   if (isDeep) {
     sandGrad.addColorStop(0, '#0e1e2c');
     sandGrad.addColorStop(0.5, '#0a1520');
@@ -370,11 +396,11 @@ function drawBackground() {
   }
   ctx.fillStyle = sandGrad;
   ctx.beginPath();
-  ctx.moveTo(0, WH);
-  for (let x = 0; x <= WW; x += 25) {
-    ctx.lineTo(x, WH - 30 + Math.sin(x * 0.035 + GS.time * 0.15) * 8);
+  ctx.moveTo(0, currentWH);
+  for (let x = 0; x <= currentWW; x += 25) {
+    ctx.lineTo(x, currentWH - 30 + Math.sin(x * 0.035 + GS.time * 0.15) * 8);
   }
-  ctx.lineTo(WW, WH); ctx.lineTo(0, WH);
+  ctx.lineTo(currentWW, currentWH); ctx.lineTo(0, currentWH);
   ctx.closePath();
   ctx.fill();
 
@@ -383,8 +409,8 @@ function drawBackground() {
     ctx.lineWidth = 1.5;
     for (let i = 0; i < 5; i++) {
       ctx.beginPath();
-      for (let x = 0; x <= W; x += 25) {
-        const y = H - 28 + i * 4 + Math.sin(x * 0.035 + GS.time * 0.15 + i * 0.5) * 5;
+      for (let x = 0; x <= currentWW; x += 25) {
+        const y = currentWH - 28 + i * 4 + Math.sin(x * 0.035 + GS.time * 0.15 + i * 0.5) * 5;
         x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
       ctx.stroke();
@@ -2489,7 +2515,7 @@ function updateFishing(dt) {
   // Ambient seabed bubbles — rise continuously from the seafloor
   if (Math.random() < dt * 8) {
     const bx = cam.x + Math.random() * VW;
-    const by = WH - 40 - Math.random() * 80;
+    const by = currentWH - 40 - Math.random() * 80;
     const r = 1.5 + Math.random() * 4.5;
     bubbles.push({ x: bx, y: by, r, ry: r * 0.9, vy: -(0.3 + Math.random() * 0.7), life: 1.0,
                    dx: (Math.random() - 0.5) * 0.25, wobble: Math.random() * Math.PI * 2, wobbleSpeed: 0.8 + Math.random() * 1.2 });
@@ -2529,10 +2555,11 @@ function updateFishing(dt) {
 
     // Boundary bounce
     if (f.y < 60) { f.y = 60; f.vy = Math.abs(f.vy); }
-    if (f.y > H - 100) { f.y = H - 100; f.vy = -Math.abs(f.vy); }
+    if (f.y > currentWH - 100) { f.y = currentWH - 100; f.vy = -Math.abs(f.vy); }
 
-    // Remove if far off viewport
-    if (f.x < cam.x - 300 || f.x > cam.x + VW + 300) {
+    // Remove if far off viewport (check both axes for portrait mode)
+    if (f.x < cam.x - 300 || f.x > cam.x + VW + 300 ||
+        f.y < cam.y - 300 || f.y > cam.y + VH + 300) {
       fishes.splice(i, 1);
     }
   }
@@ -2719,13 +2746,16 @@ canvas.addEventListener('click', e => {
   }
 });
 
-// Touch: move finger = pan camera; tap = interact
+// Touch: drag = pan camera; tap (no drag) = interact
+const DRAG_THRESHOLD = 12; // pixels before touch is classified as drag
+
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
   const t = e.touches[0];
-  mouseScreen.x = t.clientX;
-  mouseScreen.y = t.clientY;
-  // Trigger press feedback on title button
+  touchStartPos = { x: t.clientX, y: t.clientY };
+  touchIsDrag = false;
+  touchActive = true;
+  // Press feedback on title button
   if (GS.scene === 'title') {
     const b = GS._titleBtnBounds;
     if (b && t.clientX >= b.x && t.clientX <= b.x + b.w && t.clientY >= b.y && t.clientY <= b.y + b.h) {
@@ -2736,13 +2766,28 @@ canvas.addEventListener('touchstart', e => {
 
 canvas.addEventListener('touchmove', e => {
   e.preventDefault();
+  if (!touchStartPos) return;
   const t = e.touches[0];
-  mouseScreen.x = t.clientX;
-  mouseScreen.y = t.clientY;
+  const dx = t.clientX - touchStartPos.x;
+  const dy = t.clientY - touchStartPos.y;
+  if (!touchIsDrag && Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
+    touchIsDrag = true;
+  }
+  if (touchIsDrag && GS.scene === 'fishing') {
+    // Direct delta pan — move world opposite to finger drag
+    cam.x = Math.max(0, Math.min(Math.max(0, currentWW - VW), cam.x - dx));
+    cam.y = Math.max(0, Math.min(Math.max(0, currentWH - VH), cam.y - dy));
+    camTarget.x = cam.x;
+    camTarget.y = cam.y;
+  }
+  touchStartPos = { x: t.clientX, y: t.clientY };
 }, { passive: false });
 
 canvas.addEventListener('touchend', e => {
   e.preventDefault();
+  touchActive = false;
+  if (touchIsDrag) { touchStartPos = null; touchIsDrag = false; return; }
+  // Treat as tap
   const t = e.changedTouches[0];
   const rect = canvas.getBoundingClientRect();
   if (GS.scene === 'title') {
@@ -2758,6 +2803,8 @@ canvas.addEventListener('touchend', e => {
   } else if (GS.scene === 'restaurant') {
     handleRestaurantClick(t.clientX - rect.left, t.clientY - rect.top);
   }
+  touchStartPos = null;
+  touchIsDrag = false;
 }, { passive: false });
 
 function handleFishingClick(mx, my) {
@@ -2770,7 +2817,8 @@ function handleFishingClick(mx, my) {
   for (const f of fishes) {
     const dx = mx - f.x, dy = my - f.y;
     const dist = Math.sqrt(dx*dx + dy*dy);
-    const hitRadius = f.size + 15 + (GS.upgradeNet ? 15 : 0);
+    const touchBonus = (navigator.maxTouchPoints > 0) ? 28 : 0;
+    const hitRadius = f.size + 15 + (GS.upgradeNet ? 15 : 0) + touchBonus;
     if (dist < hitRadius && dist < nearestDist) {
       nearest = f;
       nearestDist = dist;
@@ -3091,18 +3139,19 @@ function loop(ts) {
     // Restore camera transform — HUD drawn in screen space
     ctx.restore();
 
-    // Camera follows mouse — mouse at screen center = no offset,
-    // mouse at edge = camera shifts toward that side of the world
-    if (GS.scene === 'fishing') {
-      // Map mouse from [0,VW] → cam target in [0, WW-VW]
+    // Camera follows mouse (PC only) — touch uses direct drag in touchmove
+    if (GS.scene === 'fishing' && !touchActive) {
+      // Map mouse from [0,VW] → cam target in [0, currentWW-VW]
       const normX = mouseScreen.x / VW; // 0..1
       const normY = mouseScreen.y / VH;
-      camTarget.x = normX * (WW - VW);
-      camTarget.y = normY * (WH - VH);
+      camTarget.x = normX * (currentWW - VW);
+      camTarget.y = normY * (currentWH - VH);
       cam.x += (camTarget.x - cam.x) * 0.04;
       cam.y += (camTarget.y - cam.y) * 0.04;
-      cam.x = Math.max(0, Math.min(WW - VW, cam.x));
-      cam.y = Math.max(0, Math.min(WH - VH, cam.y));
+    }
+    if (GS.scene === 'fishing') {
+      cam.x = Math.max(0, Math.min(Math.max(0, currentWW - VW), cam.x));
+      cam.y = Math.max(0, Math.min(Math.max(0, currentWH - VH), cam.y));
     }
 
     // Update diver — auto-wander around the viewport center
@@ -3115,8 +3164,8 @@ function loop(ts) {
       diver.y += (wanderY - diver.y) * lerp;
       if (wanderX > diver.x + 2) diver.dir = 1;
       else if (wanderX < diver.x - 2) diver.dir = -1;
-      diver.x = Math.max(40, Math.min(WW - 40, diver.x));
-      diver.y = Math.max(40, Math.min(WH - 80, diver.y));
+      diver.x = Math.max(40, Math.min(currentWW - 40, diver.x));
+      diver.y = Math.max(40, Math.min(currentWH - 80, diver.y));
     }
 
     updateFishing(dt);
@@ -3150,6 +3199,12 @@ function loop(ts) {
 
     if (transitionProgress >= 1) {
       GS.scene = 'fishing';
+      updateWorldSize();
+      diver.x = currentWW / 2;
+      diver.y = currentWH / 2;
+      cam.x = Math.max(0, Math.min(currentWW - VW, currentWW / 2 - VW / 2));
+      cam.y = Math.max(0, Math.min(currentWH - VH, currentWH / 2 - VH / 2));
+      camTarget.x = cam.x; camTarget.y = cam.y;
       fishes = [];
       generateDecorations();
       for (let i = 0; i < 28; i++) spawnFish(true);
@@ -3224,18 +3279,26 @@ function loop(ts) {
 
 // ============ INIT ============
 function startGame() {
+  updateWorldSize();
+  diver.x = currentWW / 2;
+  diver.y = currentWH / 2;
+  cam.x = Math.max(0, Math.min(currentWW - VW, currentWW / 2 - VW / 2));
+  cam.y = Math.max(0, Math.min(currentWH - VH, currentWH / 2 - VH / 2));
+  camTarget.x = cam.x; camTarget.y = cam.y;
   generateDecorations();
   fishes = [];
   for (let i = 0; i < 28; i++) spawnFish(true);
   GS.scene = 'fishing';
-  showMessage('🤿 移动鼠标探索海洋，点击或空格键捕鱼！', 4000);
+  const hint = (navigator.maxTouchPoints > 0) ? '🤿 滑动探索海洋，点击捕鱼！' : '🤿 移动鼠标探索海洋，点击或空格键捕鱼！';
+  showMessage(hint, 4000);
 }
 
 function init() {
-  diver.x = WW / 2;
-  diver.y = WH / 2;
-  cam.x = Math.max(0, Math.min(WW - VW, WW / 2 - VW / 2));
-  cam.y = Math.max(0, Math.min(WH - VH, WH / 2 - VH / 2));
+  updateWorldSize();
+  diver.x = currentWW / 2;
+  diver.y = currentWH / 2;
+  cam.x = Math.max(0, Math.min(currentWW - VW, currentWW / 2 - VW / 2));
+  cam.y = Math.max(0, Math.min(currentWH - VH, currentWH / 2 - VH / 2));
   camTarget.x = cam.x;
   camTarget.y = cam.y;
   mouseScreen.x = VW / 2;
