@@ -134,6 +134,7 @@ let decorations = [];
 let particles = [];
 let customers = [];
 let floatingTexts = [];
+let flyingDishes = []; // { x, y, tx, ty, emoji, t, dur }
 let transitionProgress = 0;
 let sharkClickState = {}; // fishId -> {count, timer}
 
@@ -1924,6 +1925,13 @@ function drawCustomer(c, x, y) {
   // ── 手臂 ──
   for (const side of [-1, 1]) {
     const ax = side * (BODY_W / 2 + ARM_W / 2 - 1);
+    // Eating animation: right arm (side=1) lifts up and down while served
+    let armAngle = 0;
+    let armOffY = 0;
+    if (c.state === 'served' && side === 1) {
+      // Raise right arm rhythmically: chopstick/fork motion
+      armOffY = -Math.abs(Math.sin((c.eatPhase || 0) * 0.8)) * 14;
+    }
     const armG = ctx.createLinearGradient(ax - ARM_W / 2, 0, ax + ARM_W / 2, 0);
     armG.addColorStop(0, shadeColor(S.shirt, side < 0 ? 1.1 : 0.75));
     armG.addColorStop(1, shadeColor(S.shirt, side < 0 ? 0.75 : 1.1));
@@ -1931,15 +1939,24 @@ function drawCustomer(c, x, y) {
     ctx.strokeStyle = 'rgba(0,0,0,0.3)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(ax - ARM_W / 2, -LEG_H - BODY_H + 4, ARM_W, ARM_H, 5);
+    ctx.roundRect(ax - ARM_W / 2, -LEG_H - BODY_H + 4 + armOffY, ARM_W, ARM_H, 5);
     ctx.fill(); ctx.stroke();
     // 手
     ctx.fillStyle = S.skin;
     ctx.strokeStyle = 'rgba(0,0,0,0.25)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.ellipse(ax, -LEG_H - BODY_H + 4 + ARM_H + 5, 6, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(ax, -LEG_H - BODY_H + 4 + ARM_H + 5 + armOffY, 6, 5, 0, 0, Math.PI * 2);
     ctx.fill(); ctx.stroke();
+    // Chopsticks in right hand when eating
+    if (c.state === 'served' && side === 1) {
+      ctx.strokeStyle = '#c89050';
+      ctx.lineWidth = 1.5;
+      ctx.lineCap = 'round';
+      const hy = -LEG_H - BODY_H + 4 + ARM_H + armOffY - 2;
+      ctx.beginPath(); ctx.moveTo(ax - 2, hy); ctx.lineTo(ax, hy - 18); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ax + 2, hy); ctx.lineTo(ax + 5, hy - 16); ctx.stroke();
+    }
   }
 
   // ── 裙摆（lady 专用，盖在腿上） ──
@@ -2124,11 +2141,44 @@ function drawCustomer(c, x, y) {
   }
 
 
-  // ── 已上菜 ──
+  // ── 已上菜：大笑嘴 + 桌上食物 ──
   if (c.state === 'served') {
-    ctx.font = '24px serif';
+    // Cover the patience-based mouth drawn above with skin color
+    ctx.fillStyle = S.skin;
+    ctx.beginPath(); ctx.ellipse(0, headY + 11, 11, 9, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Big open happy mouth
+    ctx.strokeStyle = 'rgba(80,20,20,0.85)';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(0, headY + 12, 9, 0.1, Math.PI - 0.1);
+    ctx.stroke();
+    ctx.fillStyle = '#3a0808';
+    ctx.beginPath();
+    ctx.arc(0, headY + 12, 7.5, 0.2, Math.PI - 0.2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-6, headY + 9, 12, 4);
+    // Rosy cheeks
+    ctx.fillStyle = 'rgba(255,120,120,0.22)';
+    ctx.beginPath(); ctx.ellipse(-11, headY + 8, 6, 4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(11, headY + 8, 6, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Food on plate at table surface
+    const foodY = -LEG_H - 4;
+    ctx.fillStyle = 'rgba(0,0,0,0.08)';
+    ctx.beginPath(); ctx.ellipse(1, foodY + 6, 16, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = 'rgba(180,140,80,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(0, foodY + 4, 15, 5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    const foodBob = Math.sin((c.eatPhase || 0) * 0.8) * 1.5;
+    ctx.font = '15px serif';
     ctx.textAlign = 'center';
-    ctx.fillText('😊', 0, headY - HEAD_R - 8);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(c.servedEmoji || '🍣', 0, foodY - 3 + foodBob);
+    ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
   }
 
@@ -2591,7 +2641,8 @@ function updateRestaurant(dt) {
         }
       } else if (c.state === 'served') {
         c.servedTimer += dt;
-        if (c.servedTimer > 2) t.customer = null;
+        c.eatPhase = (c.eatPhase || 0) + dt * 3.5; // eating animation speed
+        if (c.servedTimer > 3.5) t.customer = null;
       }
     }
   }
@@ -2604,7 +2655,14 @@ function updateRestaurant(dt) {
     if (ft.life <= 0) floatingTexts.splice(i, 1);
   }
 
-  // Update HUD
+  // Update flying dishes
+  for (let i = flyingDishes.length - 1; i >= 0; i--) {
+    const d = flyingDishes[i];
+    d.progress += dt / d.dur;
+    if (d.progress >= 1) flyingDishes.splice(i, 1);
+  }
+
+  // Update restaurant HUD
   document.getElementById('coins2').textContent = GS.coins;
   document.getElementById('satisfaction').textContent = GS.satisfaction;
   document.getElementById('storageCount').textContent = GS.warehouse.length;
@@ -2847,6 +2905,24 @@ function handleRestaurantClick(screenX, screenY) {
             GS.coins += tip;
             GS.score += Math.floor(c.order.price / 5);
             c.state = 'served';
+            c.servedTimer = 0;
+            c.servedEmoji = c.order.emoji;
+            c.eatPhase = 0; // eating animation phase
+
+            // Flying dish animation: from inventory panel → table (screen coords)
+            const rScale = Math.min(VW / 900, VH / 600);
+            const rOffX = (VW - 900 * rScale) / 2;
+            const rOffY = (VH - 600 * rScale) / 2;
+            flyingDishes.push({
+              sx: rOffX + 100 * rScale,            // inventory panel center
+              sy: rOffY + 430 * rScale,
+              tx: rOffX + t.x * rScale,             // table screen pos
+              ty: rOffY + (t.y + 10) * rScale,
+              emoji: c.order.emoji,
+              progress: 0,
+              dur: 0.45
+            });
+
             GS.preparingDish = null;
             if (c.patience > 0.8) {
               GS.satisfaction = Math.min(100, GS.satisfaction + 5);
@@ -3071,15 +3147,57 @@ function loop(ts) {
     drawRestaurant();
     drawFloatingTexts();
 
-    // Show currently selected dish
-    if (GS.preparingDish) {
-      ctx.fillStyle = 'rgba(255,220,0,0.15)';
-      ctx.fillRect(0, 0, VW, VH);
-      ctx.fillStyle = '#ff4';
-      ctx.font = 'bold 16px Microsoft YaHei';
+    // Flying dish animations (screen space, on top of everything)
+    for (const d of flyingDishes) {
+      const p = d.progress;
+      // Ease out cubic
+      const ep = 1 - Math.pow(1 - p, 3);
+      const x = d.sx + (d.tx - d.sx) * ep;
+      // Arc upward via quadratic bezier (control point above midpoint)
+      const cy = Math.min(d.sy, d.ty) - 80;
+      const bx = d.sx + (d.tx - d.sx) * ep;
+      const t2 = ep;
+      const arcY = (1-t2)*(1-t2)*d.sy + 2*(1-t2)*t2*cy + t2*t2*d.ty;
+      const scale = 0.6 + 0.4 * ep;
+      ctx.save();
+      ctx.translate(x, arcY);
+      ctx.scale(scale, scale);
+      ctx.font = '28px serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`正在准备: ${GS.preparingDish.emoji} ${GS.preparingDish.name} — 点击顾客桌子上菜！`, VW / 2, VH / 2);
+      ctx.textBaseline = 'middle';
+      // Plate shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.beginPath(); ctx.ellipse(2, 6, 18, 6, 0, 0, Math.PI * 2); ctx.fill();
+      // Plate
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.ellipse(0, 4, 18, 6, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(180,140,80,0.4)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(0, 4, 18, 6, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillText(d.emoji, 0, -4);
+      ctx.restore();
+    }
+
+    // Cursor: if holding a dish, draw emoji following mouse
+    if (GS.preparingDish) {
+      const cx = mouseScreen.x, cy = mouseScreen.y;
+      ctx.save();
+      ctx.font = '22px serif';
       ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      // Small plate under food
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.beginPath(); ctx.ellipse(cx + 14, cy + 22, 14, 5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(180,140,80,0.4)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(cx + 14, cy + 22, 14, 5, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillText(GS.preparingDish.emoji, cx + 4, cy + 6);
+      // "点击桌子上菜" hint near cursor
+      ctx.fillStyle = 'rgba(40,20,0,0.75)';
+      ctx.beginPath(); ctx.roundRect(cx + 28, cy + 2, 90, 20, 4); ctx.fill();
+      ctx.fillStyle = '#fff8e8';
+      ctx.font = '11px Microsoft YaHei';
+      ctx.textAlign = 'left';
+      ctx.fillText('点击桌子上菜', cx + 32, cy + 16);
+      ctx.restore();
     }
 
     updateRestaurant(dt);
