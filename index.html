@@ -51,7 +51,7 @@ canvas.width = VW;
 canvas.height = VH;
 
 // World size (larger than viewport — camera scrolls through it)
-const WW = 3200;
+const WW = 2000;
 const WH = 1600;
 
 // Legacy aliases used by restaurant / UI code
@@ -1823,129 +1823,302 @@ function drawTable(t) {
   ctx.ellipse(x, y + 19, 12, 6, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  if (customer) drawCustomer(customer, x, y - 22);
+  if (customer) drawCustomer(customer, x, y + 50);
 }
 
 function drawCustomer(c, x, y) {
+  // Origin (x,y) = customer feet center, in restaurant's 900×600 space
   ctx.save();
   ctx.translate(x, y);
 
-  // 身体渐变
-  const bodyG = ctx.createRadialGradient(-5, -5, 3, 0, 0, 22);
-  bodyG.addColorStop(0, shadeColor(c.color || '#f4c88a', 1.3));
-  bodyG.addColorStop(1, shadeColor(c.color || '#f4c88a', 0.75));
+  const style = c.style || 'business';
+  const STYLES = {
+    business: { shirt: '#3a6fd8', pants: '#1a2a4a', skin: '#f5c89a', hair: '#1a1a1a' },
+    casual:   { shirt: '#e05030', pants: '#4a7ac8', skin: '#f0b87a', hair: '#6a3a10' },
+    lady:     { shirt: '#d04080', pants: '#d04080', skin: '#fad0a0', hair: '#cc2266' },
+    old:      { shirt: '#708060', pants: '#506050', skin: '#e8c090', hair: '#cccccc' },
+  };
+  const S = STYLES[style] || STYLES.business;
+
+  const HEAD_R = 18, BODY_W = 28, BODY_H = 34;
+  const ARM_W = 10, ARM_H = 22, LEG_W = 10, LEG_H = 18;
+
+  // ── 腿 + 鞋 ──
+  for (const side of [-1, 1]) {
+    const lx = side * 7;
+    // 腿
+    ctx.fillStyle = S.pants;
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(lx - LEG_W / 2, -LEG_H, LEG_W, LEG_H, 4);
+    ctx.fill(); ctx.stroke();
+    // 鞋
+    ctx.fillStyle = '#2a1a0a';
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(lx + side * 3, -2, 9, 5, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+  }
+
+  // ── 身体 ──
+  const bodyG = ctx.createLinearGradient(-BODY_W / 2, -LEG_H - BODY_H, BODY_W / 2, -LEG_H);
+  bodyG.addColorStop(0, shadeColor(S.shirt, 1.25));
+  bodyG.addColorStop(1, shadeColor(S.shirt, 0.7));
   ctx.fillStyle = bodyG;
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.ellipse(0, 0, 18, 22, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // 衣服高光
-  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.roundRect(-BODY_W / 2, -LEG_H - BODY_H, BODY_W, BODY_H, [8, 8, 4, 4]);
+  ctx.fill(); ctx.stroke();
+
+  // 衣领高光
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.beginPath();
-  ctx.ellipse(-5, -8, 9, 7, -0.3, 0, Math.PI * 2);
+  ctx.roundRect(-BODY_W / 2 + 3, -LEG_H - BODY_H + 3, BODY_W - 6, 12, 5);
   ctx.fill();
 
-  // 头部
-  const headG = ctx.createRadialGradient(-4, -32, 2, 0, -28, 15);
-  headG.addColorStop(0, shadeColor(c.skinColor || '#f8d9a0', 1.2));
-  headG.addColorStop(1, shadeColor(c.skinColor || '#f8d9a0', 0.85));
+  // ── 手臂 ──
+  for (const side of [-1, 1]) {
+    const ax = side * (BODY_W / 2 + ARM_W / 2 - 1);
+    const armG = ctx.createLinearGradient(ax - ARM_W / 2, 0, ax + ARM_W / 2, 0);
+    armG.addColorStop(0, shadeColor(S.shirt, side < 0 ? 1.1 : 0.75));
+    armG.addColorStop(1, shadeColor(S.shirt, side < 0 ? 0.75 : 1.1));
+    ctx.fillStyle = armG;
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(ax - ARM_W / 2, -LEG_H - BODY_H + 4, ARM_W, ARM_H, 5);
+    ctx.fill(); ctx.stroke();
+    // 手
+    ctx.fillStyle = S.skin;
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(ax, -LEG_H - BODY_H + 4 + ARM_H + 5, 6, 5, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+  }
+
+  // ── 裙摆（lady 专用，盖在腿上） ──
+  if (style === 'lady') {
+    const skirtG = ctx.createLinearGradient(0, -LEG_H - 6, 0, -2);
+    skirtG.addColorStop(0, shadeColor(S.pants, 1.1));
+    skirtG.addColorStop(1, shadeColor(S.pants, 0.7));
+    ctx.fillStyle = skirtG;
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-BODY_W / 2, -LEG_H - 6);
+    ctx.lineTo(-BODY_W / 2 - 8, -2);
+    ctx.lineTo(BODY_W / 2 + 8, -2);
+    ctx.lineTo(BODY_W / 2, -LEG_H - 6);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  }
+
+  // ── 头部 ──
+  const headY = -LEG_H - BODY_H - HEAD_R + 4;
+  const headG = ctx.createRadialGradient(-5, headY - 6, 2, 0, headY, HEAD_R);
+  headG.addColorStop(0, shadeColor(S.skin, 1.2));
+  headG.addColorStop(1, shadeColor(S.skin, 0.85));
   ctx.fillStyle = headG;
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(0, -28, 14, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.arc(0, headY, HEAD_R, 0, Math.PI * 2);
+  ctx.fill(); ctx.stroke();
 
-  // 头发
-  ctx.fillStyle = c.hairColor || '#333';
-  ctx.beginPath();
-  ctx.arc(0, -36, 14, Math.PI, 0);
-  ctx.fill();
-  // 头发高光
-  ctx.fillStyle = 'rgba(255,255,255,0.15)';
-  ctx.beginPath();
-  ctx.ellipse(-4, -40, 7, 3.5, -0.4, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 眼睛
-  ctx.fillStyle = '#fff';
-  for (const ex of [-5, 5]) {
-    ctx.beginPath();
-    ctx.arc(ex, -30, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.fillStyle = '#333';
-  for (const ex of [-5, 5]) {
-    ctx.beginPath();
-    ctx.arc(ex, -30, 2.2, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.fillStyle = 'rgba(255,255,255,0.8)';
-  for (const ex of [-5, 5]) {
-    ctx.beginPath();
-    ctx.arc(ex + 0.8, -31, 0.9, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // 表情
-  ctx.strokeStyle = '#555';
+  // ── 头发 ──
+  ctx.fillStyle = S.hair;
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
   ctx.lineWidth = 1.5;
-  if (c.patience > 0.5) {
+  if (style === 'lady') {
+    // 长发：头顶弧 + 两侧垂发
     ctx.beginPath();
-    ctx.arc(0, -24, 5, 0.2, Math.PI - 0.2);
+    ctx.arc(0, headY, HEAD_R, Math.PI, 0);
+    ctx.fill(); ctx.stroke();
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(side * (HEAD_R - 2), headY + 10, 6, 16, side * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (style === 'old') {
+    // 稀疏白发
+    ctx.beginPath();
+    ctx.arc(0, headY, HEAD_R, Math.PI * 1.1, Math.PI * 1.9);
+    ctx.fill(); ctx.stroke();
+  } else {
+    // 普通短发
+    ctx.beginPath();
+    ctx.arc(0, headY, HEAD_R, Math.PI, 0);
+    ctx.lineTo(HEAD_R * 0.7, headY + 4);
+    ctx.lineTo(-HEAD_R * 0.7, headY + 4);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  }
+  // 发丝高光
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.beginPath();
+  ctx.ellipse(-5, headY - HEAD_R + 5, 7, 3, -0.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ── 眼睛（卡通大眼） ──
+  for (const side of [-1, 1]) {
+    const ex = side * 7, ey = headY - 2;
+    // 眼白
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(ex, ey, 6, 7, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    // 虹膜
+    const irisColor = style === 'casual' ? '#4a7a30' : style === 'lady' ? '#6644cc' : '#3355aa';
+    ctx.fillStyle = irisColor;
+    ctx.beginPath();
+    ctx.ellipse(ex, ey + 1, 4, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // 瞳孔
+    ctx.fillStyle = '#111';
+    ctx.beginPath();
+    ctx.ellipse(ex, ey + 1, 2.5, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // 高光
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(ex + 1.5, ey - 1, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(ex - 1, ey + 1.5, 0.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── 嘴 ──
+  ctx.strokeStyle = 'rgba(80,20,20,0.8)';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  if (c.patience > 0.5) {
+    // 微笑
+    ctx.beginPath();
+    ctx.arc(0, headY + 8, 7, 0.25, Math.PI - 0.25);
+    ctx.stroke();
+    // 嘴角酒窝
+    ctx.fillStyle = 'rgba(200,100,100,0.3)';
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.arc(side * 7, headY + 10, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (c.patience > 0.2) {
+    // 平嘴
+    ctx.beginPath();
+    ctx.moveTo(-5, headY + 9);
+    ctx.lineTo(5, headY + 9);
     ctx.stroke();
   } else {
+    // 皱眉 + 下弯嘴
     ctx.beginPath();
-    ctx.arc(0, -19, 5, Math.PI + 0.2, -0.2);
+    ctx.arc(0, headY + 14, 7, Math.PI + 0.25, -0.25);
     ctx.stroke();
+    // 皱眉线
+    ctx.strokeStyle = 'rgba(80,40,0,0.6)';
+    ctx.lineWidth = 1.5;
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(side * 3, headY - 8);
+      ctx.lineTo(side * 8, headY - 12);
+      ctx.stroke();
+    }
   }
 
-  // 订单气泡
-  if (c.order && c.state === 'waiting') {
-    const bw = 92, bh = 42;
-    // 气泡阴影
-    ctx.fillStyle = 'rgba(0,0,0,0.15)';
-    ctx.beginPath();
-    ctx.roundRect(13, -91, bw, bh, 9);
-    ctx.fill();
-    // 气泡背景
-    ctx.fillStyle = 'rgba(255,255,255,0.97)';
-    ctx.beginPath();
-    ctx.roundRect(10, -93, bw, bh, 9);
-    ctx.fill();
-    ctx.strokeStyle = '#ccc';
+  // ── 装饰 ──
+  if (style === 'business') {
+    // 领带
+    ctx.fillStyle = '#cc2222';
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
     ctx.lineWidth = 1;
-    ctx.stroke();
-    // 三角
-    ctx.fillStyle = 'rgba(255,255,255,0.97)';
     ctx.beginPath();
-    ctx.moveTo(16, -51); ctx.lineTo(6, -43); ctx.lineTo(26, -51);
-    ctx.fill();
-
-    ctx.fillStyle = '#333';
-    ctx.font = '13px Microsoft YaHei';
-    ctx.fillText(c.order.emoji + ' ' + c.order.name, 17, -72);
-
-    // 耐心条(圆角 + 渐变)
-    ctx.fillStyle = '#e8e8e8';
+    ctx.moveTo(-3, -LEG_H - BODY_H + 14);
+    ctx.lineTo(3, -LEG_H - BODY_H + 14);
+    ctx.lineTo(5, -LEG_H - BODY_H + 28);
+    ctx.lineTo(0, -LEG_H - BODY_H + 34);
+    ctx.lineTo(-5, -LEG_H - BODY_H + 28);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  } else if (style === 'casual') {
+    // 棒球帽
+    ctx.fillStyle = shadeColor(S.shirt, 0.85);
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(17, -61, 68, 7, 3);
-    ctx.fill();
-    const pColor = c.patience > 0.5 ? '#44cc44' : c.patience > 0.25 ? '#ffaa22' : '#ff3333';
-    const pG = ctx.createLinearGradient(17, 0, 17 + 68 * c.patience, 0);
-    pG.addColorStop(0, pColor);
-    pG.addColorStop(1, shadeColor(pColor, 0.8));
-    ctx.fillStyle = pG;
+    ctx.arc(0, headY, HEAD_R, Math.PI, 0);
+    ctx.fill(); ctx.stroke();
+    // 帽檐
     ctx.beginPath();
-    ctx.roundRect(17, -61, 68 * c.patience, 7, 3);
-    ctx.fill();
-    // 耐心条高光
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.ellipse(HEAD_R * 0.3, headY, HEAD_R * 1.25, 5, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    // 帽徽
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 8px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('★', 0, headY - HEAD_R / 2);
+    ctx.textAlign = 'left';
+  } else if (style === 'old') {
+    // 胡须
+    ctx.fillStyle = '#cccccc';
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(17, -61, 68 * c.patience, 3, 2);
+    ctx.ellipse(0, headY + 12, 10, 7, 0, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = 'rgba(150,150,150,0.6)';
+    for (let i = -3; i <= 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * 3, headY + 7);
+      ctx.lineTo(i * 3.5, headY + 18);
+      ctx.stroke();
+    }
   }
 
+  // ── 订单气泡 ──
+  if (c.order && c.state === 'waiting') {
+    const bw = 96, bh = 44, bx = 14, by = headY - HEAD_R - 50;
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.beginPath(); ctx.roundRect(bx + 2, by + 2, bw, bh, 10); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.97)';
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 10); ctx.fill(); ctx.stroke();
+    // 气泡尾巴
+    ctx.fillStyle = 'rgba(255,255,255,0.97)';
+    ctx.beginPath();
+    ctx.moveTo(bx + 8, by + bh);
+    ctx.lineTo(2, by + bh + 10);
+    ctx.lineTo(bx + 22, by + bh);
+    ctx.closePath(); ctx.fill();
+    // 菜名
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 13px Microsoft YaHei';
+    ctx.fillText(c.order.emoji + ' ' + c.order.name, bx + 8, by + 18);
+    // 耐心条
+    ctx.fillStyle = '#e8e8e8';
+    ctx.beginPath(); ctx.roundRect(bx + 8, by + 26, 72, 8, 3); ctx.fill();
+    const pColor = c.patience > 0.5 ? '#44cc44' : c.patience > 0.25 ? '#ffaa22' : '#ff3333';
+    const pG = ctx.createLinearGradient(bx + 8, 0, bx + 8 + 72 * c.patience, 0);
+    pG.addColorStop(0, pColor); pG.addColorStop(1, shadeColor(pColor, 0.75));
+    ctx.fillStyle = pG;
+    ctx.beginPath(); ctx.roundRect(bx + 8, by + 26, 72 * c.patience, 8, 3); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath(); ctx.roundRect(bx + 8, by + 26, 72 * c.patience, 3, 2); ctx.fill();
+  }
+
+  // ── 已上菜 ──
   if (c.state === 'served') {
-    ctx.font = '22px serif';
-    ctx.fillText('😊', -11, -54);
+    ctx.font = '24px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('😊', 0, headY - HEAD_R - 8);
+    ctx.textAlign = 'left';
   }
 
   ctx.restore();
@@ -2212,9 +2385,7 @@ function updateRestaurant(dt) {
       if (availableDishes.length > 0) {
         const order = availableDishes[Math.floor(Math.random() * availableDishes.length)];
         emptyTable.customer = {
-          color: ['#e8c090', '#d0a070', '#f8d0a0', '#c0a080'][Math.floor(Math.random() * 4)],
-          skinColor: '#f8d9a0',
-          hairColor: ['#333', '#664', '#882', '#555'][Math.floor(Math.random() * 4)],
+          style: ['business', 'casual', 'lady', 'old'][Math.floor(Math.random() * 4)],
           order,
           patience: 1.0,
           state: 'waiting',
