@@ -1466,36 +1466,31 @@ function drawDiver() {
 
   ctx.restore();
 
-  // 气泡(折射效果)
+  // Diver exhaust bubbles
   for (const b of d.bubbles) {
+    const rx = b.r, ry = b.r;
     ctx.save();
-    ctx.globalAlpha = b.life * 0.9;
-    // 气泡内部折射色
-    const bGrad = ctx.createRadialGradient(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.05, b.x, b.y, b.r);
-    bGrad.addColorStop(0, 'rgba(220,245,255,0.5)');
-    bGrad.addColorStop(0.6, 'rgba(150,210,255,0.1)');
-    bGrad.addColorStop(1, 'rgba(100,180,255,0.05)');
-    ctx.fillStyle = bGrad;
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-    ctx.fill();
-    // 轮廓
-    ctx.strokeStyle = 'rgba(180,230,255,0.75)';
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-    // 高光点
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.beginPath();
-    ctx.arc(b.x - b.r * 0.3, b.y - b.r * 0.35, b.r * 0.25, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.globalAlpha = b.life * 0.85;
+    ctx.translate(b.x, b.y);
+    const innerG = ctx.createRadialGradient(-rx * 0.25, -ry * 0.3, 0, 0, 0, rx);
+    innerG.addColorStop(0, 'rgba(230,248,255,0.22)');
+    innerG.addColorStop(0.6, 'rgba(140,210,255,0.06)');
+    innerG.addColorStop(1, 'rgba(80,160,230,0.02)');
+    ctx.fillStyle = innerG;
+    ctx.beginPath(); ctx.arc(0, 0, rx, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(200,238,255,0.6)';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath(); ctx.arc(0, 0, rx, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.72)';
+    ctx.beginPath(); ctx.ellipse(-rx * 0.28, -ry * 0.34, rx * 0.22, ry * 0.14, -0.4, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 }
 
 // ============ RESTAURANT DRAWING ============
 function drawRestaurant() {
-  // Fill entire viewport first to avoid black bars
-  ctx.fillStyle = '#5ba8d8';
+  // Deep dark background — modern restaurant vibe
+  ctx.fillStyle = '#0f1923';
   ctx.fillRect(0, 0, VW, VH);
 
   // Scale restaurant (designed at 900×600) to fit entirely within viewport
@@ -1506,182 +1501,142 @@ function drawRestaurant() {
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
 
-  // 天空渐变
-  const skyGrad = ctx.createLinearGradient(0, 0, 0, 260);
-  skyGrad.addColorStop(0, '#5ba8d8');
-  skyGrad.addColorStop(0.6, '#9fd0f0');
-  skyGrad.addColorStop(1, '#c8e8f8');
-  ctx.fillStyle = skyGrad;
-  ctx.fillRect(0, 0, 900, 260);
+  // Background — dark restaurant interior
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, 600);
+  bgGrad.addColorStop(0, '#1a2535');
+  bgGrad.addColorStop(0.5, '#141e2e');
+  bgGrad.addColorStop(1, '#0d1520');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, 900, 600);
 
-  // 云朵
-  const clouds = [
-    { x: 120 + Math.sin(GS.time * 0.08) * 15, y: 40, r: 28 },
-    { x: 380 + Math.sin(GS.time * 0.06 + 1) * 12, y: 55, r: 22 },
-    { x: 650 + Math.sin(GS.time * 0.07 + 2) * 18, y: 35, r: 32 }
-  ];
-  for (const c of clouds) {
-    ctx.save();
-    ctx.fillStyle = 'rgba(255,255,255,0.88)';
-    for (const [ox, oy, or] of [[-22, 8, c.r * 0.7], [0, 0, c.r], [20, 6, c.r * 0.75], [-12, 12, c.r * 0.55], [12, 12, c.r * 0.55]]) {
-      ctx.beginPath();
-      ctx.arc(c.x + ox, c.y + oy, or, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
-  }
+  // Subtle ambient light from ceiling — warm amber
+  const ceilLight = ctx.createRadialGradient(450, 0, 20, 450, 0, 400);
+  ceilLight.addColorStop(0, 'rgba(255,200,100,0.10)');
+  ceilLight.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = ceilLight;
+  ctx.fillRect(0, 0, 900, 600);
 
-  // 太阳
-  const sunG = ctx.createRadialGradient(820, 55, 5, 820, 55, 48);
-  sunG.addColorStop(0, '#fff7aa');
-  sunG.addColorStop(0.4, '#ffe055');
-  sunG.addColorStop(1, 'rgba(255,200,0,0)');
-  ctx.fillStyle = sunG;
-  ctx.beginPath();
-  ctx.arc(820, 55, 48, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#ffe055';
-  ctx.beginPath();
-  ctx.arc(820, 55, 30, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 海面
-  const seaGrad = ctx.createLinearGradient(0, 175, 0, 255);
-  seaGrad.addColorStop(0, '#2a9cc8');
-  seaGrad.addColorStop(1, '#0d5a80');
-  ctx.fillStyle = seaGrad;
-  ctx.fillRect(0, 175, 900, 75);
-  // 海浪高光
-  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-  ctx.lineWidth = 2.5;
-  for (let i = 0; i < 5; i++) {
-    const wx = ((GS.time * 55 + i * 170) % 1050) - 60;
+  // Ceiling with pendant lights
+  ctx.fillStyle = '#0a1018';
+  ctx.fillRect(0, 0, 900, 48);
+  // Ceiling rail
+  ctx.fillStyle = '#2a3540';
+  ctx.fillRect(0, 44, 900, 6);
+  // Pendant lamps
+  const lampPositions = [160, 350, 550, 740];
+  for (const lx of lampPositions) {
+    // Wire
+    ctx.strokeStyle = '#3a4550';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(lx, 44); ctx.lineTo(lx, 80); ctx.stroke();
+    // Lamp shade (cone)
+    ctx.fillStyle = '#c8a050';
     ctx.beginPath();
-    ctx.moveTo(wx, 195 + i * 9);
-    ctx.quadraticCurveTo(wx + 35, 188 + i * 9, wx + 70, 195 + i * 9);
-    ctx.stroke();
+    ctx.moveTo(lx - 18, 80); ctx.lineTo(lx + 18, 80); ctx.lineTo(lx + 10, 100); ctx.lineTo(lx - 10, 100);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#e8c070';
+    ctx.beginPath();
+    ctx.moveTo(lx - 18, 80); ctx.lineTo(lx + 18, 80); ctx.lineTo(lx + 16, 86); ctx.lineTo(lx - 16, 86);
+    ctx.closePath(); ctx.fill();
+    // Light glow on floor
+    const glow = ctx.createRadialGradient(lx, 100, 5, lx, 220, 180);
+    glow.addColorStop(0, 'rgba(255,220,120,0.18)');
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(lx - 180, 80, 360, 360);
+    // Bulb
+    ctx.fillStyle = 'rgba(255,255,200,0.9)';
+    ctx.beginPath(); ctx.arc(lx, 99, 4, 0, Math.PI * 2); ctx.fill();
   }
 
-  // 沙滩(渐变+细节)
-  const beachGrad = ctx.createLinearGradient(0, 245, 0, 315);
-  beachGrad.addColorStop(0, '#f0d080');
-  beachGrad.addColorStop(0.5, '#ddb858');
-  beachGrad.addColorStop(1, '#c8a040');
-  ctx.fillStyle = beachGrad;
-  ctx.fillRect(0, 245, 900, 70);
-  // 沙滩光泽纹
-  ctx.strokeStyle = 'rgba(255,230,150,0.3)';
+  // Back wall with subtle paneling
+  ctx.fillStyle = '#1e2d3d';
+  ctx.fillRect(0, 48, 900, 220);
+  // Wall panel lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
   ctx.lineWidth = 1;
-  for (let i = 0; i < 4; i++) {
-    ctx.beginPath();
-    ctx.moveTo(0, 258 + i * 12);
-    for (let x = 0; x <= 900; x += 30) {
-      ctx.lineTo(x, 258 + i * 12 + Math.sin(x * 0.05 + i) * 2);
-    }
-    ctx.stroke();
+  for (let px = 100; px < 900; px += 120) {
+    ctx.beginPath(); ctx.moveTo(px, 55); ctx.lineTo(px, 265); ctx.stroke();
   }
+  ctx.beginPath(); ctx.moveTo(0, 155); ctx.lineTo(900, 155); ctx.stroke();
 
-  // 餐厅地板(透视木地板)
-  const floorGrad = ctx.createLinearGradient(0, 315, 0, 600);
-  floorGrad.addColorStop(0, '#a0622a');
-  floorGrad.addColorStop(0.3, '#8a5220');
-  floorGrad.addColorStop(1, '#6a3810');
-  ctx.fillStyle = floorGrad;
-  ctx.fillRect(0, 315, 900, 285);
-  // 木地板纹路(透视感)
-  for (let row = 0; row < 6; row++) {
-    const y1 = 315 + row * 48;
-    const y2 = y1 + 48;
-    const perspective = row / 6;
-    ctx.strokeStyle = `rgba(60,30,5,${0.25 + perspective * 0.15})`;
-    ctx.lineWidth = 1 + perspective;
-    ctx.beginPath(); ctx.moveTo(0, y2); ctx.lineTo(900, y2); ctx.stroke();
-    // 竖向木纹(向消失点收拢)
-    const vp = 450; // 消失点x
-    for (let col = 0; col < 10; col++) {
-      const bx = col * 90;
-      const tx = vp + (bx - vp) * (1 - perspective * 0.3);
-      ctx.strokeStyle = `rgba(60,30,5,${0.12 + perspective * 0.08})`;
-      ctx.lineWidth = 0.8;
-      ctx.beginPath(); ctx.moveTo(bx, y2); ctx.lineTo(tx, y1); ctx.stroke();
-    }
-    // 木板高光
-    ctx.fillStyle = `rgba(180,120,60,${0.04 + perspective * 0.03})`;
-    ctx.fillRect(0, y1 + 4, 900, 10);
-  }
-
-  // 餐厅外墙/门楣
-  const wallGrad = ctx.createLinearGradient(0, 258, 0, 320);
-  wallGrad.addColorStop(0, '#f0e0c0');
-  wallGrad.addColorStop(1, '#d8c8a0');
-  ctx.fillStyle = wallGrad;
-  ctx.fillRect(20, 258, 860, 68);
-  // 门楣装饰线
-  ctx.strokeStyle = 'rgba(160,120,60,0.5)';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(22, 260, 856, 64);
-  ctx.strokeRect(26, 264, 848, 56);
-  // 店名
-  ctx.fillStyle = '#8a1010';
-  ctx.font = 'bold 26px Microsoft YaHei';
+  // Restaurant name sign — modern, clean
+  ctx.fillStyle = 'rgba(255,220,100,0.1)';
+  ctx.beginPath(); ctx.roundRect(200, 65, 500, 60, 6); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,210,80,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(200, 65, 500, 60, 6); ctx.stroke();
+  ctx.fillStyle = '#f0d888';
+  ctx.font = 'bold 28px Microsoft YaHei';
   ctx.textAlign = 'center';
-  ctx.shadowColor = 'rgba(255,200,150,0.5)';
-  ctx.shadowBlur = 6;
-  ctx.fillText('🍣 深海寿司  DEEP SEA SUSHI  🐟', 450, 297);
-  ctx.shadowBlur = 0;
+  ctx.fillText('🍣  深海寿司  DEEP SEA SUSHI  🐟', 450, 104);
   ctx.textAlign = 'left';
 
-  // 桌椅
+  // Floor — dark polished concrete
+  const floorG = ctx.createLinearGradient(0, 268, 0, 600);
+  floorG.addColorStop(0, '#1c2530');
+  floorG.addColorStop(0.4, '#181f28');
+  floorG.addColorStop(1, '#10161e');
+  ctx.fillStyle = floorG;
+  ctx.fillRect(0, 268, 900, 332);
+  // Floor tile grid — subtle
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let fy = 280; fy < 600; fy += 60) {
+    ctx.beginPath(); ctx.moveTo(0, fy); ctx.lineTo(900, fy); ctx.stroke();
+  }
+  for (let fx = 0; fx < 900; fx += 80) {
+    ctx.beginPath(); ctx.moveTo(fx, 268); ctx.lineTo(fx, 600); ctx.stroke();
+  }
+  // Floor reflection strip
+  const refG = ctx.createLinearGradient(0, 268, 0, 320);
+  refG.addColorStop(0, 'rgba(100,160,220,0.08)');
+  refG.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = refG;
+  ctx.fillRect(0, 268, 900, 52);
+
+  // Counter — sleek modern bar
+  ctx.fillStyle = '#0d1520';
+  ctx.beginPath(); ctx.roundRect(300, 268, 300, 60, 4); ctx.fill();
+  // Counter top surface
+  const counterTop = ctx.createLinearGradient(300, 264, 600, 278);
+  counterTop.addColorStop(0, '#2a3c50');
+  counterTop.addColorStop(0.4, '#3a5068');
+  counterTop.addColorStop(1, '#2a3c50');
+  ctx.fillStyle = counterTop;
+  ctx.beginPath(); ctx.roundRect(298, 260, 304, 14, 3); ctx.fill();
+  // Counter top highlight
+  ctx.fillStyle = 'rgba(150,210,255,0.15)';
+  ctx.beginPath(); ctx.roundRect(300, 260, 300, 5, 3); ctx.fill();
+  // Counter front edge
+  ctx.fillStyle = '#1a2840';
+  ctx.fillRect(300, 273, 300, 4);
+
+  // Tables
   for (const t of GS.tables) drawTable(t);
 
-  // 吧台(立体)
-  const counterG = ctx.createLinearGradient(350, 320, 350, 375);
-  counterG.addColorStop(0, '#7a4828');
-  counterG.addColorStop(0.15, '#6a3818');
-  counterG.addColorStop(1, '#4a2808');
-  ctx.fillStyle = counterG;
-  ctx.fillRect(350, 322, 200, 52);
-  // 台面高光
-  const topG = ctx.createLinearGradient(350, 318, 560, 328);
-  topG.addColorStop(0, '#a06030');
-  topG.addColorStop(0.3, '#c08050');
-  topG.addColorStop(0.7, '#b07040');
-  topG.addColorStop(1, '#906020');
-  ctx.fillStyle = topG;
-  ctx.fillRect(348, 316, 204, 10);
-  // 台面边缘高光
-  ctx.fillStyle = 'rgba(255,200,120,0.35)';
-  ctx.fillRect(350, 316, 200, 4);
-
-  // 仓库面板
-  const panelG = ctx.createLinearGradient(10, 370, 190, 570);
-  panelG.addColorStop(0, 'rgba(0,5,20,0.88)');
-  panelG.addColorStop(1, 'rgba(0,0,10,0.92)');
-  ctx.fillStyle = panelG;
-  ctx.beginPath();
-  ctx.roundRect(10, 370, 180, 205, 10);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(100,180,255,0.35)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.roundRect(10, 370, 180, 205, 10);
-  ctx.stroke();
-  // 内边框高光
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  // ── INVENTORY PANEL (left) — modern card ──
+  ctx.fillStyle = 'rgba(8,14,22,0.92)';
+  ctx.beginPath(); ctx.roundRect(10, 280, 188, 310, 10); ctx.fill();
+  ctx.strokeStyle = 'rgba(60,120,200,0.25)';
   ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.roundRect(13, 373, 174, 199, 8);
-  ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(10, 280, 188, 310, 10); ctx.stroke();
+  // Panel top accent line
+  ctx.fillStyle = 'rgba(80,160,255,0.6)';
+  ctx.beginPath(); ctx.roundRect(10, 280, 188, 3, [3, 3, 0, 0]); ctx.fill();
 
-  ctx.fillStyle = '#cce8ff';
-  ctx.font = 'bold 14px Microsoft YaHei';
-  ctx.fillText('📦 仓库', 62, 393);
+  // Panel title
+  ctx.fillStyle = '#7ab8f5';
+  ctx.font = 'bold 13px Microsoft YaHei';
+  ctx.fillText('INVENTORY', 18, 301);
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(10, 308, 188, 1);
 
   const warehouseByType = {};
   for (const w of GS.warehouse) {
     warehouseByType[w.type] = (warehouseByType[w.type] || 0) + 1;
   }
-  let wy = 412;
+  let wy = 325;
   ctx.font = '13px Microsoft YaHei';
   let totalItems = 0;
   for (const ft of FISH_TYPES) {
@@ -1690,113 +1645,103 @@ function drawRestaurant() {
       totalItems++;
       const isSelected = GS.preparingDish && GS.preparingDish.type === ft.type;
       if (isSelected) {
-        ctx.fillStyle = 'rgba(255,220,0,0.15)';
-        ctx.beginPath();
-        ctx.roundRect(14, wy - 14, 172, 20, 4);
-        ctx.fill();
+        ctx.fillStyle = 'rgba(255,200,50,0.12)';
+        ctx.beginPath(); ctx.roundRect(14, wy - 14, 180, 20, 4); ctx.fill();
       }
-      ctx.fillStyle = isSelected ? '#ffdd00' : '#adf';
-      ctx.fillText(`${ft.emoji} ${ft.name}  x${cnt}`, 20, wy);
-      ctx.fillStyle = '#f88';
+      ctx.fillStyle = isSelected ? '#ffd740' : '#c8dff0';
+      ctx.fillText(`${ft.emoji} ${ft.name}  ×${cnt}`, 20, wy);
+      ctx.fillStyle = isSelected ? '#ff8888' : '#8899bb';
       ctx.font = '11px Microsoft YaHei';
-      ctx.fillText('[卖出]', 148, wy);
+      ctx.fillText('[出售]', 160, wy);
       ctx.font = '13px Microsoft YaHei';
       wy += 22;
     }
   }
   if (totalItems === 0) {
-    ctx.fillStyle = '#668';
+    ctx.fillStyle = '#445566';
     ctx.font = '13px Microsoft YaHei';
-    ctx.fillText('仓库空空如也...', 28, 432);
-    ctx.fillText('去潜水捕鱼吧！', 32, 452);
+    ctx.fillText('仓库空空如也...', 28, 345);
+    ctx.fillText('去潜水捕鱼吧！', 32, 368);
   }
 
-  // 全部出售按钮
-  const sellBtnG = ctx.createLinearGradient(15, 548, 95, 575);
-  sellBtnG.addColorStop(0, '#1da855');
-  sellBtnG.addColorStop(1, '#148840');
-  ctx.fillStyle = sellBtnG;
-  ctx.beginPath();
-  ctx.roundRect(15, 548, 80, 26, 7);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.15)';
-  ctx.beginPath();
-  ctx.roundRect(15, 548, 80, 12, 7);
-  ctx.fill();
+  // Sell button
+  const sellG = ctx.createLinearGradient(16, 552, 96, 576);
+  sellG.addColorStop(0, '#1a9e55'); sellG.addColorStop(1, '#117a3d');
+  ctx.fillStyle = sellG;
+  ctx.beginPath(); ctx.roundRect(16, 550, 82, 26, 6); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.beginPath(); ctx.roundRect(16, 550, 82, 11, [6, 6, 0, 0]); ctx.fill();
   ctx.fillStyle = '#fff';
-  ctx.font = '12px Microsoft YaHei';
-  ctx.fillText('全部出售', 28, 565);
+  ctx.font = 'bold 12px Microsoft YaHei';
+  ctx.fillText('全部出售', 30, 567);
 
-  ctx.fillStyle = '#ffe066';
-  ctx.font = 'bold 15px Microsoft YaHei';
-  ctx.fillText(`💰 ${GS.coins} 金币`, 20, 592);
+  ctx.fillStyle = '#f0c040';
+  ctx.font = 'bold 14px Microsoft YaHei';
+  ctx.fillText(`💰 ${GS.coins}`, 18, 585);
 
-  // 菜单板
-  const menuG = ctx.createLinearGradient(720, 370, 885, 570);
-  menuG.addColorStop(0, 'rgba(10,8,2,0.88)');
-  menuG.addColorStop(1, 'rgba(5,5,0,0.92)');
-  ctx.fillStyle = menuG;
-  ctx.beginPath();
-  ctx.roundRect(720, 370, 165, 200, 10);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(200,180,80,0.4)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.roundRect(720, 370, 165, 200, 10);
-  ctx.stroke();
-  ctx.fillStyle = '#ffe8a0';
-  ctx.font = 'bold 13px Microsoft YaHei';
-  ctx.fillText('📋 今日菜单', 755, 392);
-  // 分隔线
-  ctx.strokeStyle = 'rgba(200,180,80,0.25)';
+  // ── MENU PANEL (right) — modern card ──
+  ctx.fillStyle = 'rgba(8,14,22,0.92)';
+  ctx.beginPath(); ctx.roundRect(704, 280, 186, 210, 10); ctx.fill();
+  ctx.strokeStyle = 'rgba(200,160,40,0.25)';
   ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(728, 400); ctx.lineTo(877, 400);
-  ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(704, 280, 186, 210, 10); ctx.stroke();
+  ctx.fillStyle = 'rgba(200,160,50,0.6)';
+  ctx.beginPath(); ctx.roundRect(704, 280, 186, 3, [3, 3, 0, 0]); ctx.fill();
+
+  ctx.fillStyle = '#d4b04a';
+  ctx.font = 'bold 13px Microsoft YaHei';
+  ctx.fillText('TODAY\'S MENU', 715, 301);
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(704, 308, 186, 1);
+
   ctx.font = '12px Microsoft YaHei';
-  let my = 415;
+  let my = 324;
   for (const dish of SUSHI_MENU) {
     const hasIngredient = (warehouseByType[dish.fishType] || 0) > 0;
-    ctx.fillStyle = hasIngredient ? '#c8f0d8' : '#4a5060';
-    ctx.fillText(`${dish.emoji}${dish.name}`, 728, my);
-    ctx.fillStyle = hasIngredient ? '#ffe066' : '#4a5060';
-    ctx.fillText(`¥${dish.price}`, 836, my);
-    my += 25;
+    if (hasIngredient) {
+      ctx.fillStyle = 'rgba(80,200,120,0.08)';
+      ctx.beginPath(); ctx.roundRect(707, my - 13, 180, 18, 3); ctx.fill();
+    }
+    ctx.fillStyle = hasIngredient ? '#b0e8c0' : '#3a4a5a';
+    ctx.fillText(`${dish.emoji} ${dish.name}`, 712, my);
+    ctx.fillStyle = hasIngredient ? '#f0c040' : '#3a4a5a';
+    ctx.fillText(`¥${dish.price}`, 852, my);
+    my += 24;
   }
 
   drawUpgradeShop();
 
-  // Draw order bubbles on top of everything else so they're never obscured
+  // Order bubbles — always on top
   for (const t of GS.tables) {
     if (t.customer && t.customer.order && t.customer.state === 'waiting') {
       const c = t.customer;
-      const x = t.x, y = t.y + 50; // same origin as drawCustomer call
+      const x = t.x, y = t.y + 50;
       const HEAD_R = 18, LEG_H = 18, BODY_H = 34;
       const headY = -LEG_H - BODY_H - HEAD_R + 4;
       ctx.save();
       ctx.translate(x, y);
       const bw = 96, bh = 44, bx = 14, by = headY - HEAD_R - 50;
-      ctx.fillStyle = 'rgba(0,0,0,0.12)';
-      ctx.beginPath(); ctx.roundRect(bx + 2, by + 2, bw, bh, 10); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.97)';
-      ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1;
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath(); ctx.roundRect(bx + 2, by + 3, bw, bh, 10); ctx.fill();
+      ctx.fillStyle = 'rgba(20,32,50,0.96)';
+      ctx.strokeStyle = 'rgba(100,160,255,0.4)'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 10); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,0.97)';
+      // Tail
+      ctx.fillStyle = 'rgba(20,32,50,0.96)';
       ctx.beginPath();
       ctx.moveTo(bx + 8, by + bh); ctx.lineTo(2, by + bh + 10); ctx.lineTo(bx + 22, by + bh);
       ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#333';
+      ctx.fillStyle = '#e0eeff';
       ctx.font = 'bold 13px Microsoft YaHei';
       ctx.fillText(c.order.emoji + ' ' + c.order.name, bx + 8, by + 18);
-      ctx.fillStyle = '#e8e8e8';
-      ctx.beginPath(); ctx.roundRect(bx + 8, by + 26, 72, 8, 3); ctx.fill();
-      const pColor = c.patience > 0.5 ? '#44cc44' : c.patience > 0.25 ? '#ffaa22' : '#ff3333';
+      // Patience bar
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.beginPath(); ctx.roundRect(bx + 8, by + 27, 72, 7, 3); ctx.fill();
+      const pColor = c.patience > 0.5 ? '#44dd66' : c.patience > 0.25 ? '#ffaa22' : '#ff4444';
       const pG = ctx.createLinearGradient(bx + 8, 0, bx + 8 + 72 * c.patience, 0);
       pG.addColorStop(0, pColor); pG.addColorStop(1, shadeColor(pColor, 0.75));
       ctx.fillStyle = pG;
-      ctx.beginPath(); ctx.roundRect(bx + 8, by + 26, 72 * c.patience, 8, 3); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.beginPath(); ctx.roundRect(bx + 8, by + 26, 72 * c.patience, 3, 2); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(bx + 8, by + 27, 72 * c.patience, 7, 3); ctx.fill();
       ctx.restore();
     }
   }
@@ -1807,77 +1752,70 @@ function drawRestaurant() {
 function drawTable(t) {
   const { x, y, customer } = t;
 
-  // 地面阴影
-  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  // Floor shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
   ctx.beginPath();
-  ctx.ellipse(x, y + 50, 55, 12, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y + 52, 52, 10, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // 桌腿
-  ctx.fillStyle = '#4a2808';
-  ctx.beginPath();
-  ctx.rect(x - 4, y + 22, 8, 28);
-  ctx.fill();
-  // 腿高光
-  ctx.fillStyle = 'rgba(255,180,100,0.2)';
-  ctx.beginPath();
-  ctx.rect(x - 3, y + 22, 3, 28);
-  ctx.fill();
-
-  // 椅子(立体)
+  // Chair legs — thin dark metal
   for (const side of [-1, 1]) {
-    const cx = x + side * 40;
-    const cy = y + 22;
-    // 椅座阴影
-    ctx.fillStyle = '#3a2008';
-    ctx.beginPath();
-    ctx.ellipse(cx + 2, cy + 2, 13, 7, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // 椅座
-    const chairG = ctx.createRadialGradient(cx - 4, cy - 3, 1, cx, cy, 13);
-    chairG.addColorStop(0, '#8a5828');
-    chairG.addColorStop(1, '#4a2808');
-    ctx.fillStyle = chairG;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, 13, 7, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,200,130,0.25)';
-    ctx.beginPath();
-    ctx.ellipse(cx - 3, cy - 2, 6, 3, -0.3, 0, Math.PI * 2);
-    ctx.fill();
+    const cx = x + side * 38;
+    ctx.fillStyle = '#1a2230';
+    ctx.fillRect(cx - 3, y + 28, 6, 24);
+    ctx.fillStyle = 'rgba(100,150,200,0.15)';
+    ctx.fillRect(cx - 1, y + 28, 2, 24);
   }
 
-  // 桌面阴影
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.beginPath();
-  ctx.ellipse(x + 3, y + 24, 47, 22, 0, 0, Math.PI * 2);
-  ctx.fill();
+  // Table leg — single pedestal
+  ctx.fillStyle = '#1e2c3a';
+  ctx.fillRect(x - 5, y + 22, 10, 30);
+  ctx.fillStyle = 'rgba(100,180,255,0.1)';
+  ctx.fillRect(x - 2, y + 22, 3, 30);
 
-  // 桌面(椭圆立体)
-  const tableG = ctx.createRadialGradient(x - 15, y + 5, 5, x, y + 20, 50);
-  tableG.addColorStop(0, '#b07848');
-  tableG.addColorStop(0.5, '#8a5828');
-  tableG.addColorStop(1, '#5a3010');
+  // Chair seats — dark upholstered
+  for (const side of [-1, 1]) {
+    const cx = x + side * 38;
+    const cy = y + 24;
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath(); ctx.ellipse(cx + 2, cy + 2, 14, 7, 0, 0, Math.PI * 2); ctx.fill();
+    const chairG = ctx.createRadialGradient(cx - 4, cy - 2, 1, cx, cy, 14);
+    chairG.addColorStop(0, '#2a3a4a');
+    chairG.addColorStop(1, '#141e2a');
+    ctx.fillStyle = chairG;
+    ctx.beginPath(); ctx.ellipse(cx, cy, 14, 7, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(80,130,200,0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(cx, cy, 14, 7, 0, 0, Math.PI * 2); ctx.stroke();
+    // Seat cushion highlight
+    ctx.fillStyle = 'rgba(100,160,220,0.12)';
+    ctx.beginPath(); ctx.ellipse(cx - 4, cy - 2, 6, 3, -0.3, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Table top shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath(); ctx.ellipse(x + 3, y + 23, 48, 20, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Table surface — dark glass/stone
+  const tableG = ctx.createRadialGradient(x - 15, y + 8, 4, x, y + 20, 50);
+  tableG.addColorStop(0, '#2e4055');
+  tableG.addColorStop(0.5, '#1e2e40');
+  tableG.addColorStop(1, '#121e2c');
   ctx.fillStyle = tableG;
-  ctx.beginPath();
-  ctx.ellipse(x, y + 20, 46, 22, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // 桌面高光边缘
-  ctx.strokeStyle = 'rgba(200,140,70,0.5)';
+  ctx.beginPath(); ctx.ellipse(x, y + 20, 47, 21, 0, 0, Math.PI * 2); ctx.fill();
+  // Table edge glow
+  ctx.strokeStyle = 'rgba(80,140,220,0.3)';
   ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.ellipse(x, y + 20, 46, 22, 0, 0, Math.PI * 2);
-  ctx.stroke();
-  // 桌面高光
-  ctx.fillStyle = 'rgba(255,210,140,0.2)';
-  ctx.beginPath();
-  ctx.ellipse(x - 12, y + 13, 22, 9, -0.3, 0, Math.PI * 2);
-  ctx.fill();
-  // 餐具摆设
-  ctx.fillStyle = 'rgba(220,200,180,0.6)';
-  ctx.beginPath();
-  ctx.ellipse(x, y + 19, 12, 6, 0, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x, y + 20, 47, 21, 0, 0, Math.PI * 2); ctx.stroke();
+  // Table surface reflection
+  ctx.fillStyle = 'rgba(100,180,255,0.06)';
+  ctx.beginPath(); ctx.ellipse(x - 10, y + 14, 24, 8, -0.3, 0, Math.PI * 2); ctx.fill();
+  // Plate/setting
+  ctx.fillStyle = 'rgba(50,80,110,0.8)';
+  ctx.beginPath(); ctx.ellipse(x, y + 20, 11, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(120,180,240,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.ellipse(x, y + 20, 11, 5, 0, 0, Math.PI * 2); ctx.stroke();
 
   if (customer) drawCustomer(customer, x, y + 50);
 }
@@ -2150,69 +2088,43 @@ function drawCustomer(c, x, y) {
 }
 
 function drawUpgradeShop() {
-  const shopG = ctx.createLinearGradient(205, 540, 705, 595);
-  shopG.addColorStop(0, 'rgba(15,8,2,0.9)');
-  shopG.addColorStop(1, 'rgba(8,5,0,0.9)');
-  ctx.fillStyle = shopG;
-  ctx.beginPath();
-  ctx.roundRect(205, 540, 500, 52, 10);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(180,150,60,0.4)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.roundRect(205, 540, 500, 52, 10);
-  ctx.stroke();
-  // 顶部高光
-  ctx.fillStyle = 'rgba(255,255,255,0.04)';
-  ctx.beginPath();
-  ctx.roundRect(207, 541, 496, 18, 8);
-  ctx.fill();
+  // Panel background
+  ctx.fillStyle = 'rgba(8,14,22,0.92)';
+  ctx.beginPath(); ctx.roundRect(205, 540, 500, 52, 8); ctx.fill();
+  ctx.strokeStyle = 'rgba(60,100,160,0.25)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(205, 540, 500, 52, 8); ctx.stroke();
+  ctx.fillStyle = 'rgba(60,120,220,0.5)';
+  ctx.beginPath(); ctx.roundRect(205, 540, 500, 3, [3, 3, 0, 0]); ctx.fill();
 
-  ctx.fillStyle = '#d4b860';
-  ctx.font = 'bold 13px Microsoft YaHei';
-  ctx.fillText('🔧 升级:', 216, 564);
+  ctx.fillStyle = '#7aa0cc';
+  ctx.font = 'bold 12px Microsoft YaHei';
+  ctx.fillText('UPGRADES', 214, 558);
 
   const upgrades = [
-    { label: '🎣 渔网升级', desc: '捕鱼范围+20%', cost: 200, key: 'netLevel' },
-    { label: '🏃 速度升级', desc: '潜水员速度+20%', cost: 300, key: 'speedLevel' },
-    { label: '🏠 扩大餐厅', desc: '新增桌位', cost: 500, key: 'tableLevel' }
+    { label: '🎣 渔网', desc: '捕鱼范围 +20%', cost: 200, key: 'netLevel' },
+    { label: '🏃 速度', desc: '潜水速度 +20%', cost: 300, key: 'speedLevel' },
+    { label: '🏠 桌位', desc: '新增餐桌', cost: 500, key: 'tableLevel' }
   ];
 
   let ux = 295;
   for (const u of upgrades) {
     const canAfford = GS.coins >= u.cost;
-    // 按钮背景渐变
-    const btnG = ctx.createLinearGradient(ux, 543, ux, 583);
-    if (canAfford) {
-      btnG.addColorStop(0, '#2ab868');
-      btnG.addColorStop(0.5, '#18a050');
-      btnG.addColorStop(1, '#108038');
-    } else {
-      btnG.addColorStop(0, '#555');
-      btnG.addColorStop(1, '#3a3a3a');
-    }
-    ctx.fillStyle = btnG;
-    ctx.beginPath();
-    ctx.roundRect(ux, 543, 140, 42, 7);
-    ctx.fill();
-    // 高光
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    ctx.beginPath();
-    ctx.roundRect(ux + 1, 543, 138, 18, 7);
-    ctx.fill();
-    // 边框
-    ctx.strokeStyle = canAfford ? 'rgba(100,255,150,0.3)' : 'rgba(100,100,100,0.3)';
+    ctx.fillStyle = canAfford ? 'rgba(20,80,50,0.85)' : 'rgba(20,25,35,0.85)';
+    ctx.beginPath(); ctx.roundRect(ux, 543, 138, 44, 6); ctx.fill();
+    ctx.strokeStyle = canAfford ? 'rgba(60,200,100,0.3)' : 'rgba(50,70,100,0.3)';
     ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(ux, 543, 140, 42, 7);
-    ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(ux, 543, 138, 44, 6); ctx.stroke();
+    // top highlight
+    ctx.fillStyle = canAfford ? 'rgba(100,255,150,0.07)' : 'rgba(255,255,255,0.03)';
+    ctx.beginPath(); ctx.roundRect(ux + 1, 544, 136, 14, [5, 5, 0, 0]); ctx.fill();
 
-    ctx.fillStyle = '#fff';
-    ctx.font = '12px Microsoft YaHei';
-    ctx.fillText(u.label, ux + 7, 559);
-    ctx.fillStyle = canAfford ? '#c8ffda' : '#888';
+    ctx.fillStyle = canAfford ? '#c8f0d8' : '#506070';
+    ctx.font = 'bold 12px Microsoft YaHei';
+    ctx.fillText(u.label, ux + 8, 559);
+    ctx.fillStyle = canAfford ? '#f0c040' : '#405060';
     ctx.font = '11px Microsoft YaHei';
-    ctx.fillText(`💰${u.cost}  ${u.desc}`, ux + 7, 576);
+    ctx.fillText(`¥${u.cost}  ${u.desc}`, ux + 8, 576);
     ux += 155;
   }
 }
@@ -2368,43 +2280,50 @@ function drawTitle() {
   ctx.textAlign = 'left';
 
   // ── START BUTTON ──
-  const btnW = 220, btnH = 52, btnX = VW / 2 - btnW / 2, btnY = VH * 0.55;
-  const btnPulse = 1 + Math.sin(t * 3) * 0.04;
+  const btnW = 200, btnH = 48, btnX = VW / 2 - btnW / 2, btnY = VH * 0.56;
+  const hovering = mouseScreen.x >= btnX && mouseScreen.x <= btnX + btnW &&
+                   mouseScreen.y >= btnY && mouseScreen.y <= btnY + btnH;
+  const btnOffsetY = hovering ? -2 : 0;
 
   ctx.save();
-  ctx.translate(VW / 2, btnY + btnH / 2);
-  ctx.scale(btnPulse, btnPulse);
+  ctx.translate(btnX, btnY + btnOffsetY);
 
-  // Button shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
-  ctx.fillRect(-btnW / 2 + 4, -btnH / 2 + 4, btnW, btnH);
-  // Button bg (pixel style — no border radius)
-  ctx.fillStyle = '#e84040';
-  ctx.fillRect(-btnW / 2, -btnH / 2, btnW, btnH);
-  // Button highlight top
-  ctx.fillStyle = '#ff7070';
-  ctx.fillRect(-btnW / 2, -btnH / 2, btnW, 10);
-  // Button dark bottom
-  ctx.fillStyle = '#a02020';
-  ctx.fillRect(-btnW / 2, btnH / 2 - 8, btnW, 8);
-  // Button text
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 22px "Courier New", monospace';
+  // Drop shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(3, 5, btnW, btnH);
+  // Button body
+  ctx.fillStyle = '#c83030';
+  ctx.fillRect(0, 0, btnW, btnH);
+  // Top edge highlight
+  ctx.fillStyle = '#e85050';
+  ctx.fillRect(0, 0, btnW, 8);
+  // Bottom edge shadow
+  ctx.fillStyle = '#8a1818';
+  ctx.fillRect(0, btnH - 6, btnW, 6);
+  // Hover glow border
+  if (hovering) {
+    ctx.strokeStyle = 'rgba(255,160,160,0.85)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, 0, btnW, btnH);
+  }
+  // Text
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 20px "Courier New", monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('▶  开始游戏', 0, 8);
+  ctx.fillText('▶  开始游戏', btnW / 2, btnH / 2 + 7);
   ctx.textAlign = 'left';
 
   ctx.restore();
 
   // Subtitle hint
-  ctx.fillStyle = 'rgba(200,240,255,0.7)';
-  ctx.font = '14px "Courier New", monospace';
+  ctx.fillStyle = 'rgba(180,220,255,0.6)';
+  ctx.font = '13px "Courier New", monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('移动鼠标探索海洋  点击捕鱼  上岸经营寿司店', VW / 2, btnY + btnH + 32);
+  ctx.fillText('移动鼠标探索海洋  点击捕鱼  上岸经营寿司店', VW / 2, btnY + btnH + 28);
   ctx.textAlign = 'left';
 
   // Store button bounds for click detection
-  GS._titleBtnBounds = { x: btnX, y: btnY, w: btnW, h: btnH };
+  GS._titleBtnBounds = { x: btnX, y: btnY + btnOffsetY, w: btnW, h: btnH };
 }
 
 // ============ TRANSITION ============
@@ -2460,7 +2379,16 @@ function updateFishing(dt) {
   }
   document.getElementById('oxyBar').style.width = (GS.oxygen / GS.oxygenMax * 100) + '%';
 
-  // Spawn fish — 高频率保证屏幕始终有鱼
+  // Ambient seabed bubbles — rise continuously from the seafloor
+  if (Math.random() < dt * 8) {
+    const bx = cam.x + Math.random() * VW;
+    const by = WH - 40 - Math.random() * 80;
+    const r = 1.5 + Math.random() * 4.5;
+    bubbles.push({ x: bx, y: by, r, ry: r * 0.9, vy: -(0.3 + Math.random() * 0.7), life: 1.0,
+                   dx: (Math.random() - 0.5) * 0.25, wobble: Math.random() * Math.PI * 2, wobbleSpeed: 0.8 + Math.random() * 1.2 });
+  }
+
+  // Spawn fish to keep the sea populated
   if (Math.random() < dt * 3.5) spawnFish();
 
   // Update fish
@@ -2522,14 +2450,16 @@ function updateFishing(dt) {
     if (b.life <= 0) diver.bubbles.splice(i, 1);
   }
 
-  // Update bubbles
+  // Update bubbles — realistic rise with wobble drift
   for (let i = bubbles.length - 1; i >= 0; i--) {
     const b = bubbles[i];
+    b.wobble = (b.wobble || 0) + dt * (b.wobbleSpeed || 1.0);
     b.y += b.vy;
-    b.x += b.dx;
-    b.r += 0.02;
-    b.life -= dt * 0.8;
-    if (b.life <= 0 || b.y < 0) bubbles.splice(i, 1);
+    b.x += b.dx + Math.sin(b.wobble) * 0.35;
+    b.r += 0.018;
+    b.ry = b.r * (0.85 + Math.abs(Math.sin(b.wobble * 0.5)) * 0.15);
+    b.life -= dt * 0.55;
+    if (b.life <= 0 || b.y < cam.y - 40) bubbles.splice(i, 1);
   }
 
   // Update particles
@@ -2956,25 +2886,35 @@ function loop(ts) {
     drawBackground();
     drawDecorations();
 
-    // Draw bubbles (折射气泡)
+    // Draw bubbles — realistic refractive spheres
     for (const b of bubbles) {
+      const rx = b.r, ry = b.ry || b.r;
       ctx.save();
-      ctx.globalAlpha = b.life * 0.8;
-      const bG = ctx.createRadialGradient(b.x - b.r * 0.3, b.y - b.r * 0.35, 0, b.x, b.y, b.r);
-      bG.addColorStop(0, 'rgba(220,245,255,0.4)');
-      bG.addColorStop(0.7, 'rgba(120,200,255,0.08)');
-      bG.addColorStop(1, 'rgba(80,160,255,0.03)');
-      ctx.fillStyle = bG;
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(180,230,255,0.7)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,0.65)';
-      ctx.beginPath();
-      ctx.arc(b.x - b.r * 0.28, b.y - b.r * 0.32, b.r * 0.22, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.globalAlpha = b.life * 0.75;
+      ctx.translate(b.x, b.y);
+      // Outer glow
+      const outerG = ctx.createRadialGradient(0, 0, ry * 0.3, 0, 0, rx * 1.4);
+      outerG.addColorStop(0, 'rgba(180,230,255,0)');
+      outerG.addColorStop(1, 'rgba(100,180,255,0.06)');
+      ctx.fillStyle = outerG;
+      ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.4, ry * 1.4, 0, 0, Math.PI * 2); ctx.fill();
+      // Bubble interior — nearly transparent with subtle caustic tint
+      const innerG = ctx.createRadialGradient(-rx * 0.25, -ry * 0.3, 0, 0, 0, rx);
+      innerG.addColorStop(0, 'rgba(230,248,255,0.18)');
+      innerG.addColorStop(0.6, 'rgba(140,210,255,0.05)');
+      innerG.addColorStop(1, 'rgba(80,160,230,0.02)');
+      ctx.fillStyle = innerG;
+      ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+      // Rim — thin bright edge (surface tension)
+      ctx.strokeStyle = 'rgba(200,238,255,0.55)';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+      // Primary specular highlight — upper-left
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.beginPath(); ctx.ellipse(-rx * 0.30, -ry * 0.35, rx * 0.22, ry * 0.14, -0.4, 0, Math.PI * 2); ctx.fill();
+      // Secondary small highlight
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.beginPath(); ctx.ellipse(rx * 0.15, -ry * 0.50, rx * 0.09, ry * 0.06, 0.3, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
 
