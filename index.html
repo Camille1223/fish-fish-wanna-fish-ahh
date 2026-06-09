@@ -7,8 +7,8 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Microsoft YaHei', sans-serif; }
-  #gameCanvas { display: block; cursor: crosshair; max-width: 100vw; max-height: 100vh; object-fit: contain; }
-  #ui { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 1400px; pointer-events: none; }
+  #gameCanvas { display: block; cursor: crosshair; width: 100vw; height: 100vh; }
+  #ui { position: absolute; top: 0; left: 0; width: 100vw; pointer-events: none; }
   .hud { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; }
   .hud-item { background: rgba(0,5,20,0.82); border: 1px solid rgba(100,200,255,0.5); border-radius: 10px; padding: 6px 14px; color: #9ef; font-size: 13px; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,100,200,0.3), inset 0 1px 0 rgba(255,255,255,0.08); }
   .oxygen-bar { width: 120px; height: 12px; background: rgba(0,0,0,0.5); border-radius: 6px; overflow: hidden; border: 1px solid rgba(100,200,255,0.4); }
@@ -43,9 +43,30 @@
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const W = 1400, H = 800;
-canvas.width = W;
-canvas.height = H;
+
+// Viewport size (matches window)
+let VW = window.innerWidth;
+let VH = window.innerHeight;
+canvas.width = VW;
+canvas.height = VH;
+
+// World size (larger than viewport — camera scrolls through it)
+const WW = 2400;
+const WH = 900;
+
+// Legacy aliases used by restaurant / UI code
+const W = WW;
+const H = WH;
+
+// Camera (top-left corner of viewport in world coords)
+let cam = { x: 0, y: 0 };
+
+window.addEventListener('resize', () => {
+  VW = window.innerWidth;
+  VH = window.innerHeight;
+  canvas.width = VW;
+  canvas.height = VH;
+});
 
 // ============ GAME STATE ============
 const GS = {
@@ -97,7 +118,7 @@ const SUSHI_MENU = [
 ];
 
 // ============ ENTITIES ============
-let diver = { x: 450, y: 350, vx: 0, vy: 0, dir: 1, bubbles: [], animTime: 0 };
+let diver = { x: WW / 2, y: WH / 2, vx: 0, vy: 0, dir: 1, bubbles: [], animTime: 0 };
 let fishes = [];
 let bubbles = [];
 let decorations = [];
@@ -176,13 +197,15 @@ function spawnFish() {
     cumulative += ft.rarity;
     if (r < cumulative) { type = ft; break; }
   }
-  const side = Math.random() < 0.5 ? -1 : 1;
   const spd = type.speed * (0.8 + Math.random() * 0.4);
+  // Spawn from the sides of the current viewport so fish are always visible
+  const side = Math.random() < 0.5 ? -1 : 1;
+  const spawnX = side < 0 ? cam.x - 80 : cam.x + VW + 80;
   fishes.push({
     id: Math.random().toString(36).substr(2),
     ...type,
-    x: side < 0 ? -80 : W + 80,
-    y: 80 + Math.random() * (H - 180),
+    x: spawnX,
+    y: cam.y + 80 + Math.random() * (VH - 200),
     vx: side * spd,
     vy: (Math.random() - 0.5) * 0.6,
     phase: Math.random() * Math.PI * 2,
@@ -878,9 +901,7 @@ function drawFish(f) {
     }
 
   } else if (f.type === 'jellyfish') {
-    // 水母
-    ctx.save();
-    ctx.translate(f.x, f.y);
+    // 水母 — already translated to (f.x, f.y) by outer ctx.translate
     const jPulse = 1 + Math.sin(GS.time * 2.5 + f.phase) * 0.12;
     // 伞体
     const jG = ctx.createRadialGradient(0, -w * 0.3, 0, 0, 0, w * jPulse);
@@ -913,12 +934,11 @@ function drawFish(f) {
     ctx.beginPath();
     ctx.ellipse(0, -w * 0.2, w * 0.35, w * 0.2, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.restore();
+    // restored by outer drawFish ctx.restore()
 
   } else if (f.type === 'turtle') {
-    // 海龟
+    // 海龟 — already translated by outer ctx.translate(f.x, f.y)
     ctx.save();
-    ctx.translate(f.x, f.y);
     ctx.scale(f.vx < 0 ? -1 : 1, 1);
     const swimAngle = Math.sin(GS.time * 1.5 + f.phase) * 0.08;
     ctx.rotate(swimAngle);
@@ -970,9 +990,8 @@ function drawFish(f) {
     ctx.restore();
 
   } else if (f.type === 'octopus') {
-    // 章鱼
+    // 章鱼 — already translated by outer ctx.translate(f.x, f.y)
     ctx.save();
-    ctx.translate(f.x, f.y);
     // 头部
     const oG = ctx.createRadialGradient(-w * 0.2, -h * 0.3, 2, 0, 0, w);
     oG.addColorStop(0, shadeColor(f.bodyColor, 1.4));
@@ -1018,9 +1037,8 @@ function drawFish(f) {
     ctx.restore();
 
   } else if (f.type === 'seahorse') {
-    // 海马
+    // 海马 — already translated by outer ctx.translate(f.x, f.y)
     ctx.save();
-    ctx.translate(f.x, f.y);
     const shBob = Math.sin(GS.time * 2.5 + f.phase) * 4;
     const shSway = Math.sin(GS.time * 1.5 + f.phase) * 0.12;
     ctx.rotate(shSway);
@@ -1082,9 +1100,8 @@ function drawFish(f) {
     ctx.restore();
 
   } else if (f.type === 'anglerfish') {
-    // 安康鱼 (深海)
+    // 安康鱼 (深海) — already translated by outer ctx.translate(f.x, f.y)
     ctx.save();
-    ctx.translate(f.x, f.y);
     ctx.scale(f.vx < 0 ? -1 : 1, 1);
     // 发光诱饵
     const lureTime = GS.time * 3 + f.phase;
@@ -1455,6 +1472,12 @@ function drawDiver() {
 
 // ============ RESTAURANT DRAWING ============
 function drawRestaurant() {
+  // Scale restaurant scene (designed at 900×600) to fit viewport
+  const rx = VW / 900;
+  const ry = VH / 600;
+  ctx.save();
+  ctx.scale(rx, ry);
+
   // 天空渐变
   const skyGrad = ctx.createLinearGradient(0, 0, 0, 260);
   skyGrad.addColorStop(0, '#5ba8d8');
@@ -1714,6 +1737,7 @@ function drawRestaurant() {
   }
 
   drawUpgradeShop();
+  ctx.restore(); // end restaurant scale
 }
 
 function drawTable(t) {
@@ -2010,12 +2034,11 @@ function drawFloatingTexts() {
 function drawTransition() {
   const p = transitionProgress;
   if (GS.scene === 'toshore') {
-    // Bubble rise effect
     ctx.fillStyle = `rgba(10,40,80,${p})`;
-    ctx.fillRect(0, 0, 900, 600);
+    ctx.fillRect(0, 0, VW, VH);
     for (let i = 0; i < 20; i++) {
-      const bx = (i * 47 + GS.time * 30) % 900;
-      const by = 600 - (600 * p) - i * 10 + Math.sin(i + GS.time) * 20;
+      const bx = (i * 47 + GS.time * 30) % VW;
+      const by = VH - (VH * p) - i * 10 + Math.sin(i + GS.time) * 20;
       ctx.strokeStyle = `rgba(200,240,255,${Math.max(0, 1 - p)})`;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -2096,8 +2119,8 @@ function updateFishing(dt) {
     if (f.y < 60) { f.y = 60; f.vy = Math.abs(f.vy); }
     if (f.y > H - 100) { f.y = H - 100; f.vy = -Math.abs(f.vy); }
 
-    // Remove if off screen
-    if (f.x < -150 || f.x > W + 150) {
+    // Remove if far off viewport
+    if (f.x < cam.x - 300 || f.x > cam.x + VW + 300) {
       fishes.splice(i, 1);
     }
   }
@@ -2238,28 +2261,27 @@ document.addEventListener('keyup', e => keys[e.key] = false);
 canvas.addEventListener('mousemove', e => {
   if (GS.scene !== 'fishing') return;
   const rect = canvas.getBoundingClientRect();
-  const scaleX = W / rect.width;
-  const scaleY = H / rect.height;
-  const mx = (e.clientX - rect.left) * scaleX;
-  const my = (e.clientY - rect.top) * scaleY;
-  // 直接设置目标位置，让潜水员立即响应
+  // Screen coords → world coords (no scale needed since canvas == window size)
+  const mx = (e.clientX - rect.left) + cam.x;
+  const my = (e.clientY - rect.top) + cam.y;
   const dx = mx - diver.x, dy = my - diver.y;
   if (dx > 0) diver.dir = 1; else if (dx < 0) diver.dir = -1;
-  diver.targetX = Math.max(40, Math.min(W - 40, mx));
-  diver.targetY = Math.max(40, Math.min(H - 80, my));
+  diver.targetX = Math.max(40, Math.min(WW - 40, mx));
+  diver.targetY = Math.max(40, Math.min(WH - 80, my));
 });
 
 canvas.addEventListener('click', e => {
   const rect = canvas.getBoundingClientRect();
-  const scaleX = W / rect.width;
-  const scaleY = H / rect.height;
-  const mx = (e.clientX - rect.left) * scaleX;
-  const my = (e.clientY - rect.top) * scaleY;
+  // For fishing: convert to world coords. For restaurant: screen coords.
+  const screenX = e.clientX - rect.left;
+  const screenY = e.clientY - rect.top;
 
   if (GS.scene === 'fishing') {
+    const mx = screenX + cam.x;
+    const my = screenY + cam.y;
     handleFishingClick(mx, my);
   } else if (GS.scene === 'restaurant') {
-    handleRestaurantClick(mx, my);
+    handleRestaurantClick(screenX, screenY);
   }
 });
 
@@ -2337,7 +2359,11 @@ function catchFish(f) {
   }
 }
 
-function handleRestaurantClick(mx, my) {
+function handleRestaurantClick(screenX, screenY) {
+  // Convert screen coords to restaurant's internal 900×600 coordinate system
+  const mx = screenX / (VW / 900);
+  const my = screenY / (VH / 600);
+
   // Check sell all button
   if (mx >= 15 && mx <= 95 && my >= 545 && my <= 570) {
     sellAll();
@@ -2493,11 +2519,15 @@ function loop(ts) {
   const dt = Math.min((ts - lastTime) / 1000, 0.05);
   lastTime = ts;
 
-  ctx.clearRect(0, 0, W, H);
+  ctx.clearRect(0, 0, VW, VH);
 
   if (GS.scene === 'fishing') {
     document.getElementById('fishingHud').style.display = 'flex';
     document.getElementById('restaurantHud').style.display = 'none';
+
+    // Apply camera transform for world-space drawing
+    ctx.save();
+    ctx.translate(-cam.x, -cam.y);
 
     drawBackground();
     drawDecorations();
@@ -2543,22 +2573,36 @@ function loop(ts) {
     drawDiver();
     drawFloatingTexts();
 
+    // Restore camera transform — HUD drawn in screen space
+    ctx.restore();
+
     // Update diver position — 平滑跟随鼠标目标位置
     if (diver.targetX !== undefined) {
       const lerp = GS.upgradeSpeed ? 0.18 : 0.13;
       diver.x += (diver.targetX - diver.x) * lerp;
       diver.y += (diver.targetY - diver.y) * lerp;
     }
-    diver.x = Math.max(40, Math.min(W - 40, diver.x));
-    diver.y = Math.max(40, Math.min(H - 80, diver.y));
+    diver.x = Math.max(40, Math.min(WW - 40, diver.x));
+    diver.y = Math.max(40, Math.min(WH - 80, diver.y));
+
+    // Camera smoothly follows diver, clamped to world bounds
+    const targetCamX = diver.x - VW / 2;
+    const targetCamY = diver.y - VH / 2;
+    cam.x += (targetCamX - cam.x) * 0.08;
+    cam.y += (targetCamY - cam.y) * 0.08;
+    cam.x = Math.max(0, Math.min(WW - VW, cam.x));
+    cam.y = Math.max(0, Math.min(WH - VH, cam.y));
 
     updateFishing(dt);
 
   } else if (GS.scene === 'toshore') {
+    ctx.save();
+    ctx.translate(-cam.x, -cam.y);
     drawBackground();
     drawDecorations();
     for (const f of fishes) drawFish(f);
     drawDiver();
+    ctx.restore();
 
     transitionProgress += dt * 1.5;
     drawTransition();
@@ -2576,7 +2620,7 @@ function loop(ts) {
     transitionProgress += dt * 1.5;
 
     ctx.fillStyle = `rgba(0,30,80,${transitionProgress})`;
-    ctx.fillRect(0, 0, 900, 600);
+    ctx.fillRect(0, 0, VW, VH);
 
     if (transitionProgress >= 1) {
       GS.scene = 'fishing';
@@ -2594,10 +2638,12 @@ function loop(ts) {
     // Show currently selected dish
     if (GS.preparingDish) {
       ctx.fillStyle = 'rgba(255,220,0,0.15)';
-      ctx.fillRect(0, 0, 900, 600);
+      ctx.fillRect(0, 0, VW, VH);
       ctx.fillStyle = '#ff4';
       ctx.font = 'bold 16px Microsoft YaHei';
-      ctx.fillText(`正在准备: ${GS.preparingDish.emoji} ${GS.preparingDish.name} — 点击顾客桌子上菜！`, 200, 350);
+      ctx.textAlign = 'center';
+      ctx.fillText(`正在准备: ${GS.preparingDish.emoji} ${GS.preparingDish.name} — 点击顾客桌子上菜！`, VW / 2, VH / 2);
+      ctx.textAlign = 'left';
     }
 
     updateRestaurant(dt);
@@ -2608,8 +2654,14 @@ function loop(ts) {
 
 // ============ INIT ============
 function init() {
-  diver.targetX = W / 2;
-  diver.targetY = H / 2;
+  diver.targetX = WW / 2;
+  diver.targetY = WH / 2;
+  diver.x = WW / 2;
+  diver.y = WH / 2;
+  cam.x = WW / 2 - VW / 2;
+  cam.y = WH / 2 - VH / 2;
+  cam.x = Math.max(0, Math.min(WW - VW, cam.x));
+  cam.y = Math.max(0, Math.min(WH - VH, cam.y));
   generateDecorations();
   // 初始 spawn 足够多的鱼填满屏幕
   for (let i = 0; i < 28; i++) spawnFish();
