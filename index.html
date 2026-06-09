@@ -2,15 +2,15 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>深海捕鱼 & 寿司店</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Microsoft YaHei', sans-serif; }
-  #gameCanvas { display: block; cursor: crosshair; width: 100vw; height: 100vh; }
+  body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Microsoft YaHei', sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #gameCanvas { display: block; cursor: pointer; width: 100vw; height: 100vh; touch-action: none; -webkit-touch-callout: none; }
   #ui { position: absolute; top: 0; left: 0; width: 100vw; pointer-events: none; }
   .hud { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; }
-  .hud-item { background: rgba(0,5,20,0.82); border: 1px solid rgba(100,200,255,0.5); border-radius: 10px; padding: 6px 14px; color: #9ef; font-size: 13px; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,100,200,0.3), inset 0 1px 0 rgba(255,255,255,0.08); }
+  .hud-item { background: rgba(0,5,20,0.82); border: 1px solid rgba(100,200,255,0.5); border-radius: 10px; padding: 6px 14px; color: #9ef; font-size: 13px; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,100,200,0.3), inset 0 1px 0 rgba(255,255,255,0.08); min-height: 36px; display: inline-flex; align-items: center; }
   .oxygen-bar { width: 120px; height: 12px; background: rgba(0,0,0,0.5); border-radius: 6px; overflow: hidden; border: 1px solid rgba(100,200,255,0.4); }
   .oxygen-fill { height: 100%; background: linear-gradient(90deg, #00aaff, #00ffcc); border-radius: 6px; transition: width 0.3s; box-shadow: 0 0 6px #0af; }
   #msgBox { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(0,5,30,0.92); border: 1px solid rgba(100,220,255,0.6); border-radius: 14px; padding: 10px 28px; color: #fff; font-size: 16px; display: none; text-align: center; pointer-events: none; box-shadow: 0 4px 20px rgba(0,150,255,0.4), inset 0 1px 0 rgba(255,255,255,0.1); }
@@ -28,13 +28,13 @@
     </div>
     <div class="hud-item">🎒 <span id="storage">0</span>/20</div>
     <div class="hud-item" style="color:#adf;">区域: <span id="zoneName">浅海</span></div>
-    <div class="hud-item" style="pointer-events:all;cursor:pointer;color:#ffe;border-color:#ffe;" onclick="goAshore()">🏖️ 上岸 [E]</div>
+    <div class="hud-item" style="pointer-events:all;cursor:pointer;color:#ffe;border-color:#ffe;min-height:44px;display:flex;align-items:center;" onclick="goAshore()">🏖️ 上岸</div>
   </div>
   <div class="hud" id="restaurantHud" style="display:none;">
     <div class="hud-item">💰 <span id="coins2">0</span></div>
     <div class="hud-item">😊 满意度: <span id="satisfaction">100</span>%</div>
     <div class="hud-item">📦 仓库: <span id="storageCount">0</span>条</div>
-    <div class="hud-item" style="pointer-events:all;cursor:pointer;color:#8ff;border-color:#8ff;" onclick="goDiving()">🤿 再次潜水</div>
+    <div class="hud-item" style="pointer-events:all;cursor:pointer;color:#8ff;border-color:#8ff;min-height:44px;display:flex;align-items:center;" onclick="goDiving()">🤿 再次潜水</div>
   </div>
   <div id="msgBox"></div>
   <div id="sharkHint">🦈 快速点击鲨鱼 3 次！</div>
@@ -2425,8 +2425,8 @@ function drawTitle() {
   ctx.fillStyle = hovering ? 'rgba(255,200,200,0.7)' : 'rgba(200,220,255,0.45)';
   ctx.font = '12px "Courier New", monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('[ CLICK  /  SPACE  /  ENTER ]', VW / 2, btnY + btnH + 22);
-  ctx.fillText('移动鼠标探索海洋  点击捕鱼  上岸经营寿司店', VW / 2, btnY + btnH + 40);
+  ctx.fillText('[ CLICK  /  TAP  /  SPACE  /  ENTER ]', VW / 2, btnY + btnH + 22);
+  ctx.fillText('滑动探索海洋  触屏点击捕鱼  上岸经营寿司店', VW / 2, btnY + btnH + 40);
   ctx.textAlign = 'left';
 
   // Store button bounds for click detection
@@ -2719,12 +2719,19 @@ canvas.addEventListener('click', e => {
   }
 });
 
-// Touch: move finger = pan camera; tap = catch fish
+// Touch: move finger = pan camera; tap = interact
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
   const t = e.touches[0];
   mouseScreen.x = t.clientX;
   mouseScreen.y = t.clientY;
+  // Trigger press feedback on title button
+  if (GS.scene === 'title') {
+    const b = GS._titleBtnBounds;
+    if (b && t.clientX >= b.x && t.clientX <= b.x + b.w && t.clientY >= b.y && t.clientY <= b.y + b.h) {
+      GS._btnPressT = GS.time;
+    }
+  }
 }, { passive: false });
 
 canvas.addEventListener('touchmove', e => {
@@ -2735,14 +2742,23 @@ canvas.addEventListener('touchmove', e => {
 }, { passive: false });
 
 canvas.addEventListener('touchend', e => {
-  if (GS.scene === 'fishing') {
-    const t = e.changedTouches[0];
-    const rect = canvas.getBoundingClientRect();
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  const rect = canvas.getBoundingClientRect();
+  if (GS.scene === 'title') {
+    const b = GS._titleBtnBounds;
+    if (b && t.clientX >= b.x && t.clientX <= b.x + b.w && t.clientY >= b.y && t.clientY <= b.y + b.h) {
+      GS._btnPressT = GS.time;
+      startGame();
+    }
+  } else if (GS.scene === 'fishing') {
     const mx = (t.clientX - rect.left) + cam.x;
     const my = (t.clientY - rect.top) + cam.y;
     handleFishingClick(mx, my);
+  } else if (GS.scene === 'restaurant') {
+    handleRestaurantClick(t.clientX - rect.left, t.clientY - rect.top);
   }
-});
+}, { passive: false });
 
 function handleFishingClick(mx, my) {
   if (GS.warehouse.length >= GS.warehouseMax) {
