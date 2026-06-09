@@ -7,7 +7,7 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Microsoft YaHei', sans-serif; }
-  #gameCanvas { display: block; cursor: crosshair; width: 100vw; height: 100vh; }
+  #gameCanvas { display: block; cursor: grab; width: 100vw; height: 100vh; }
   #ui { position: absolute; top: 0; left: 0; width: 100vw; pointer-events: none; }
   .hud { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; }
   .hud-item { background: rgba(0,5,20,0.82); border: 1px solid rgba(100,200,255,0.5); border-radius: 10px; padding: 6px 14px; color: #9ef; font-size: 13px; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,100,200,0.3), inset 0 1px 0 rgba(255,255,255,0.08); }
@@ -51,8 +51,8 @@ canvas.width = VW;
 canvas.height = VH;
 
 // World size (larger than viewport — camera scrolls through it)
-const WW = 2400;
-const WH = 900;
+const WW = 3200;
+const WH = 1600;
 
 // Legacy aliases used by restaurant / UI code
 const W = WW;
@@ -187,7 +187,7 @@ function generateDecorations() {
   }
 }
 
-function spawnFish() {
+function spawnFish(forceInViewport) {
   if (fishes.length >= 35) return;
   const zone = ZONES[GS.zone];
   const r = Math.random();
@@ -198,15 +198,23 @@ function spawnFish() {
     if (r < cumulative) { type = ft; break; }
   }
   const spd = type.speed * (0.8 + Math.random() * 0.4);
-  // Spawn from the sides of the current viewport so fish are always visible
-  const side = Math.random() < 0.5 ? -1 : 1;
-  const spawnX = side < 0 ? cam.x - 80 : cam.x + VW + 80;
+  let spawnX, spawnY, vxSign;
+  if (forceInViewport) {
+    spawnX = cam.x + 60 + Math.random() * Math.max(1, VW - 120);
+    spawnY = cam.y + 80 + Math.random() * Math.max(1, VH - 200);
+    vxSign = Math.random() < 0.5 ? -1 : 1;
+  } else {
+    const side = Math.random() < 0.5 ? -1 : 1;
+    spawnX = side < 0 ? cam.x - 80 : cam.x + VW + 80;
+    spawnY = cam.y + 80 + Math.random() * Math.max(1, VH - 200);
+    vxSign = side;
+  }
   fishes.push({
     id: Math.random().toString(36).substr(2),
     ...type,
     x: spawnX,
-    y: cam.y + 80 + Math.random() * (VH - 200),
-    vx: side * spd,
+    y: spawnY,
+    vx: vxSign * spd,
     vy: (Math.random() - 0.5) * 0.6,
     phase: Math.random() * Math.PI * 2,
     hp: type.clicks,
@@ -2258,30 +2266,86 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('keyup', e => keys[e.key] = false);
 
-canvas.addEventListener('mousemove', e => {
+// Drag-to-pan state
+let drag = { active: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0, moved: false };
+
+canvas.addEventListener('mousedown', e => {
   if (GS.scene !== 'fishing') return;
-  const rect = canvas.getBoundingClientRect();
-  // Screen coords → world coords (no scale needed since canvas == window size)
-  const mx = (e.clientX - rect.left) + cam.x;
-  const my = (e.clientY - rect.top) + cam.y;
-  const dx = mx - diver.x, dy = my - diver.y;
-  if (dx > 0) diver.dir = 1; else if (dx < 0) diver.dir = -1;
-  diver.targetX = Math.max(40, Math.min(WW - 40, mx));
-  diver.targetY = Math.max(40, Math.min(WH - 80, my));
+  drag.active = true;
+  drag.moved = false;
+  drag.startX = e.clientX;
+  drag.startY = e.clientY;
+  drag.camStartX = cam.x;
+  drag.camStartY = cam.y;
+  canvas.style.cursor = 'grabbing';
 });
 
-canvas.addEventListener('click', e => {
-  const rect = canvas.getBoundingClientRect();
-  // For fishing: convert to world coords. For restaurant: screen coords.
-  const screenX = e.clientX - rect.left;
-  const screenY = e.clientY - rect.top;
+canvas.addEventListener('mousemove', e => {
+  if (GS.scene !== 'fishing') return;
+  if (!drag.active) return;
+  const dx = e.clientX - drag.startX;
+  const dy = e.clientY - drag.startY;
+  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
+  cam.x = Math.max(0, Math.min(WW - VW, drag.camStartX - dx));
+  cam.y = Math.max(0, Math.min(WH - VH, drag.camStartY - dy));
+});
 
-  if (GS.scene === 'fishing') {
-    const mx = screenX + cam.x;
-    const my = screenY + cam.y;
+canvas.addEventListener('mouseup', e => {
+  if (!drag.active) return;
+  drag.active = false;
+  canvas.style.cursor = 'grab';
+  if (!drag.moved && GS.scene === 'fishing') {
+    // Treat as click — convert screen to world coords
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) + cam.x;
+    const my = (e.clientY - rect.top) + cam.y;
     handleFishingClick(mx, my);
-  } else if (GS.scene === 'restaurant') {
-    handleRestaurantClick(screenX, screenY);
+  }
+});
+
+canvas.addEventListener('mouseleave', () => { drag.active = false; canvas.style.cursor = 'grab'; });
+
+// Touch support
+canvas.addEventListener('touchstart', e => {
+  if (GS.scene !== 'fishing') return;
+  e.preventDefault();
+  const t = e.touches[0];
+  drag.active = true;
+  drag.moved = false;
+  drag.startX = t.clientX;
+  drag.startY = t.clientY;
+  drag.camStartX = cam.x;
+  drag.camStartY = cam.y;
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  if (!drag.active) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  const dx = t.clientX - drag.startX;
+  const dy = t.clientY - drag.startY;
+  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
+  cam.x = Math.max(0, Math.min(WW - VW, drag.camStartX - dx));
+  cam.y = Math.max(0, Math.min(WH - VH, drag.camStartY - dy));
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  if (!drag.active) return;
+  drag.active = false;
+  if (!drag.moved && GS.scene === 'fishing') {
+    const t = e.changedTouches[0];
+    const rect = canvas.getBoundingClientRect();
+    const mx = (t.clientX - rect.left) + cam.x;
+    const my = (t.clientY - rect.top) + cam.y;
+    handleFishingClick(mx, my);
+  }
+});
+
+// Restaurant click (not drag-based)
+canvas.addEventListener('click', e => {
+  if (GS.scene === 'restaurant') {
+    const rect = canvas.getBoundingClientRect();
+    handleRestaurantClick(e.clientX - rect.left, e.clientY - rect.top);
   }
 });
 
@@ -2576,22 +2640,19 @@ function loop(ts) {
     // Restore camera transform — HUD drawn in screen space
     ctx.restore();
 
-    // Update diver position — 平滑跟随鼠标目标位置
-    if (diver.targetX !== undefined) {
-      const lerp = GS.upgradeSpeed ? 0.18 : 0.13;
-      diver.x += (diver.targetX - diver.x) * lerp;
-      diver.y += (diver.targetY - diver.y) * lerp;
+    // Update diver — auto-wander around the viewport center
+    {
+      // Diver lazily follows the viewport center with gentle wandering
+      const wanderX = cam.x + VW / 2 + Math.sin(GS.time * 0.4) * VW * 0.25;
+      const wanderY = cam.y + VH / 2 + Math.sin(GS.time * 0.27 + 1.5) * VH * 0.2;
+      const lerp = 0.006;
+      diver.x += (wanderX - diver.x) * lerp;
+      diver.y += (wanderY - diver.y) * lerp;
+      if (wanderX > diver.x + 2) diver.dir = 1;
+      else if (wanderX < diver.x - 2) diver.dir = -1;
+      diver.x = Math.max(40, Math.min(WW - 40, diver.x));
+      diver.y = Math.max(40, Math.min(WH - 80, diver.y));
     }
-    diver.x = Math.max(40, Math.min(WW - 40, diver.x));
-    diver.y = Math.max(40, Math.min(WH - 80, diver.y));
-
-    // Camera smoothly follows diver, clamped to world bounds
-    const targetCamX = diver.x - VW / 2;
-    const targetCamY = diver.y - VH / 2;
-    cam.x += (targetCamX - cam.x) * 0.08;
-    cam.y += (targetCamY - cam.y) * 0.08;
-    cam.x = Math.max(0, Math.min(WW - VW, cam.x));
-    cam.y = Math.max(0, Math.min(WH - VH, cam.y));
 
     updateFishing(dt);
 
@@ -2654,18 +2715,14 @@ function loop(ts) {
 
 // ============ INIT ============
 function init() {
-  diver.targetX = WW / 2;
-  diver.targetY = WH / 2;
   diver.x = WW / 2;
   diver.y = WH / 2;
-  cam.x = WW / 2 - VW / 2;
-  cam.y = WH / 2 - VH / 2;
-  cam.x = Math.max(0, Math.min(WW - VW, cam.x));
-  cam.y = Math.max(0, Math.min(WH - VH, cam.y));
+  cam.x = Math.max(0, Math.min(WW - VW, WW / 2 - VW / 2));
+  cam.y = Math.max(0, Math.min(WH - VH, WH / 2 - VH / 2));
   generateDecorations();
-  // 初始 spawn 足够多的鱼填满屏幕
-  for (let i = 0; i < 28; i++) spawnFish();
-  showMessage('🤿 欢迎来到深海捕鱼！移动鼠标控制潜水员，点击鱼来捕获！', 4000);
+  // Spawn fish directly inside the viewport so they're visible immediately
+  for (let i = 0; i < 28; i++) spawnFish(true);
+  showMessage('🤿 欢迎来到深海捕鱼！拖动画面探索海洋，点击鱼来捕获！', 4000);
   requestAnimationFrame(loop);
 }
 
