@@ -79,7 +79,7 @@ window.addEventListener('resize', () => {
 
 // ============ GAME STATE ============
 const GS = {
-  scene: 'fishing', // 'fishing' | 'restaurant' | 'transition'
+  scene: 'title', // 'title' | 'fishing' | 'restaurant' | 'transition'
   score: 0,
   coins: 0,
   satisfaction: 100,
@@ -141,7 +141,7 @@ let sharkClickState = {}; // fishId -> {count, timer}
 const ZONES = [
   { name: '浅海', bgTop: '#1a6a9a', bgBot: '#0d3d6b', light: 0.9, fishBonus: 1.0 },
   { name: '珊瑚礁', bgTop: '#0e5c7a', bgBot: '#0a3050', light: 0.7, fishBonus: 1.3 },
-  { name: '深海', bgTop: '#061828', bgBot: '#020a14', light: 0.4, fishBonus: 1.8 }
+  { name: '深海', bgTop: '#0a2a4a', bgBot: '#051828', light: 0.4, fishBonus: 1.8 }
 ];
 
 // ============ CORAL / SEAWEED GENERATION ============
@@ -1765,6 +1765,42 @@ function drawRestaurant() {
   }
 
   drawUpgradeShop();
+
+  // Draw order bubbles on top of everything else so they're never obscured
+  for (const t of GS.tables) {
+    if (t.customer && t.customer.order && t.customer.state === 'waiting') {
+      const c = t.customer;
+      const x = t.x, y = t.y + 50; // same origin as drawCustomer call
+      const HEAD_R = 18, LEG_H = 18, BODY_H = 34;
+      const headY = -LEG_H - BODY_H - HEAD_R + 4;
+      ctx.save();
+      ctx.translate(x, y);
+      const bw = 96, bh = 44, bx = 14, by = headY - HEAD_R - 50;
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      ctx.beginPath(); ctx.roundRect(bx + 2, by + 2, bw, bh, 10); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.97)';
+      ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 10); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.97)';
+      ctx.beginPath();
+      ctx.moveTo(bx + 8, by + bh); ctx.lineTo(2, by + bh + 10); ctx.lineTo(bx + 22, by + bh);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#333';
+      ctx.font = 'bold 13px Microsoft YaHei';
+      ctx.fillText(c.order.emoji + ' ' + c.order.name, bx + 8, by + 18);
+      ctx.fillStyle = '#e8e8e8';
+      ctx.beginPath(); ctx.roundRect(bx + 8, by + 26, 72, 8, 3); ctx.fill();
+      const pColor = c.patience > 0.5 ? '#44cc44' : c.patience > 0.25 ? '#ffaa22' : '#ff3333';
+      const pG = ctx.createLinearGradient(bx + 8, 0, bx + 8 + 72 * c.patience, 0);
+      pG.addColorStop(0, pColor); pG.addColorStop(1, shadeColor(pColor, 0.75));
+      ctx.fillStyle = pG;
+      ctx.beginPath(); ctx.roundRect(bx + 8, by + 26, 72 * c.patience, 8, 3); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.beginPath(); ctx.roundRect(bx + 8, by + 26, 72 * c.patience, 3, 2); ctx.fill();
+      ctx.restore();
+    }
+  }
+
   ctx.restore(); // end restaurant scale
 }
 
@@ -2101,37 +2137,6 @@ function drawCustomer(c, x, y) {
     }
   }
 
-  // ── 订单气泡 ──
-  if (c.order && c.state === 'waiting') {
-    const bw = 96, bh = 44, bx = 14, by = headY - HEAD_R - 50;
-    ctx.fillStyle = 'rgba(0,0,0,0.12)';
-    ctx.beginPath(); ctx.roundRect(bx + 2, by + 2, bw, bh, 10); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.97)';
-    ctx.strokeStyle = '#ddd';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 10); ctx.fill(); ctx.stroke();
-    // 气泡尾巴
-    ctx.fillStyle = 'rgba(255,255,255,0.97)';
-    ctx.beginPath();
-    ctx.moveTo(bx + 8, by + bh);
-    ctx.lineTo(2, by + bh + 10);
-    ctx.lineTo(bx + 22, by + bh);
-    ctx.closePath(); ctx.fill();
-    // 菜名
-    ctx.fillStyle = '#333';
-    ctx.font = 'bold 13px Microsoft YaHei';
-    ctx.fillText(c.order.emoji + ' ' + c.order.name, bx + 8, by + 18);
-    // 耐心条
-    ctx.fillStyle = '#e8e8e8';
-    ctx.beginPath(); ctx.roundRect(bx + 8, by + 26, 72, 8, 3); ctx.fill();
-    const pColor = c.patience > 0.5 ? '#44cc44' : c.patience > 0.25 ? '#ffaa22' : '#ff3333';
-    const pG = ctx.createLinearGradient(bx + 8, 0, bx + 8 + 72 * c.patience, 0);
-    pG.addColorStop(0, pColor); pG.addColorStop(1, shadeColor(pColor, 0.75));
-    ctx.fillStyle = pG;
-    ctx.beginPath(); ctx.roundRect(bx + 8, by + 26, 72 * c.patience, 8, 3); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.beginPath(); ctx.roundRect(bx + 8, by + 26, 72 * c.patience, 3, 2); ctx.fill();
-  }
 
   // ── 已上菜 ──
   if (c.state === 'served') {
@@ -2229,6 +2234,177 @@ function drawFloatingTexts() {
     ctx.shadowBlur = 0;
     ctx.restore();
   }
+}
+
+// ============ TITLE SCREEN ============
+function drawTitle() {
+  const t = GS.time;
+
+  // Sky gradient — deep ocean at bottom, surface at top
+  const skyG = ctx.createLinearGradient(0, 0, 0, VH);
+  skyG.addColorStop(0,   '#87ceeb');
+  skyG.addColorStop(0.38,'#3a9fd8');
+  skyG.addColorStop(0.42,'#1a6fa8');
+  skyG.addColorStop(1,   '#051828');
+  ctx.fillStyle = skyG;
+  ctx.fillRect(0, 0, VW, VH);
+
+  // Pixel sun
+  const sunX = VW * 0.78, sunY = VH * 0.13;
+  ctx.fillStyle = '#ffe87a';
+  ctx.fillRect(sunX - 20, sunY - 20, 40, 40);
+  ctx.fillStyle = '#ffcc00';
+  ctx.fillRect(sunX - 14, sunY - 14, 28, 28);
+  // Sun rays (pixel style)
+  ctx.fillStyle = '#ffe87a';
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + t * 0.3;
+    const rx = sunX + Math.cos(a) * 34, ry = sunY + Math.sin(a) * 34;
+    ctx.fillRect(rx - 3, ry - 3, 6, 6);
+  }
+
+  // Pixel clouds
+  const cloudOffsets = [0, VW * 0.35, VW * 0.65];
+  for (const ox of cloudOffsets) {
+    const cx = ((ox + t * 18) % (VW + 120)) - 60;
+    const cy = VH * 0.08 + Math.sin(t * 0.2 + ox) * 8;
+    ctx.fillStyle = '#ffffff';
+    for (const [dx, dy, w, h] of [[-20,8,40,16],[0,0,50,20],[20,6,36,16],[-10,16,60,12]]) {
+      ctx.fillRect(cx + dx, cy + dy, w, h);
+    }
+  }
+
+  // Ocean surface wave (pixel blocks)
+  const waveY = VH * 0.42;
+  ctx.fillStyle = '#2a9cc8';
+  ctx.fillRect(0, waveY, VW, VH - waveY);
+  ctx.fillStyle = '#1a7aa8';
+  for (let x = 0; x < VW; x += 16) {
+    const h = 8 + Math.sin(x * 0.05 + t * 2) * 6;
+    ctx.fillRect(x, waveY - h, 16, h + 4);
+  }
+  // Wave shimmer
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  for (let x = 0; x < VW; x += 32) {
+    const wx = (x + t * 40) % VW;
+    ctx.fillRect(wx, waveY - 4, 16, 4);
+  }
+
+  // Pixel underwater bubbles
+  ctx.fillStyle = 'rgba(180,230,255,0.5)';
+  for (let i = 0; i < 12; i++) {
+    const bx = (i * 137 + 50) % VW;
+    const by = waveY + 40 + ((i * 89 + t * 30 * (1 + i % 3)) % (VH - waveY - 40));
+    const bs = 4 + (i % 3) * 4;
+    ctx.fillRect(bx, by, bs, bs);
+  }
+
+  // Pixel fish swimming in background
+  const fishColors = ['#ff6b35','#4a90d9','#e07b54','#a8c256','#dd88ff'];
+  for (let i = 0; i < 5; i++) {
+    const fx = ((i * 200 + t * (30 + i * 8)) % (VW + 80)) - 40;
+    const fy = waveY + 60 + i * 40 + Math.sin(t + i) * 15;
+    const fc = fishColors[i];
+    ctx.fillStyle = fc;
+    // Pixel fish body
+    ctx.fillRect(fx, fy - 6, 24, 12);
+    ctx.fillRect(fx + 4, fy - 10, 16, 20);
+    // Tail
+    ctx.fillRect(fx - 8, fy - 8, 8, 6);
+    ctx.fillRect(fx - 8, fy + 2, 8, 6);
+    // Eye
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(fx + 18, fy - 4, 4, 4);
+    ctx.fillStyle = '#111';
+    ctx.fillRect(fx + 19, fy - 3, 2, 2);
+    ctx.fillStyle = fc;
+  }
+
+  // Pixel seaweed at bottom
+  for (let i = 0; i < 8; i++) {
+    const sx = VW * 0.05 + i * (VW * 0.13);
+    const sh = 40 + (i % 3) * 20;
+    const sway = Math.sin(t * 1.2 + i) * 6;
+    ctx.fillStyle = i % 2 === 0 ? '#2d8a4a' : '#50c870';
+    for (let seg = 0; seg < sh / 8; seg++) {
+      ctx.fillRect(sx + sway * (seg / (sh / 8)) - 4, VH - sh + seg * 8, 8, 8);
+    }
+  }
+
+  // ── TITLE TEXT (pixel style) ──
+  const titleY = VH * 0.2;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,30,80,0.7)';
+  ctx.font = 'bold 52px "Courier New", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('FISH FISH', VW / 2 + 4, titleY + 4);
+  ctx.fillText('WANNA FISH', VW / 2 + 4, titleY + 62);
+
+  // Outline
+  ctx.strokeStyle = '#003366';
+  ctx.lineWidth = 6;
+  ctx.strokeText('FISH FISH', VW / 2, titleY);
+  ctx.strokeText('WANNA FISH', VW / 2, titleY + 58);
+
+  // Main title — animated color cycle
+  const hue1 = (t * 40) % 360;
+  const hue2 = (t * 40 + 120) % 360;
+  ctx.fillStyle = `hsl(${hue1},100%,65%)`;
+  ctx.fillText('FISH FISH', VW / 2, titleY);
+  ctx.fillStyle = `hsl(${hue2},100%,65%)`;
+  ctx.fillText('WANNA FISH', VW / 2, titleY + 58);
+
+  // Pixel decoration stars/sparkles around title
+  ctx.fillStyle = '#fff';
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + t;
+    const sr = VW * 0.28 + Math.sin(t * 2 + i) * 20;
+    const sx = VW / 2 + Math.cos(a) * sr;
+    const sy = titleY - 20 + Math.sin(a) * 30;
+    const ss = 3 + Math.sin(t * 3 + i) * 2;
+    ctx.fillRect(sx - ss / 2, sy - ss / 2, ss, ss);
+  }
+  ctx.textAlign = 'left';
+
+  // ── START BUTTON ──
+  const btnW = 220, btnH = 52, btnX = VW / 2 - btnW / 2, btnY = VH * 0.55;
+  const btnPulse = 1 + Math.sin(t * 3) * 0.04;
+
+  ctx.save();
+  ctx.translate(VW / 2, btnY + btnH / 2);
+  ctx.scale(btnPulse, btnPulse);
+
+  // Button shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(-btnW / 2 + 4, -btnH / 2 + 4, btnW, btnH);
+  // Button bg (pixel style — no border radius)
+  ctx.fillStyle = '#e84040';
+  ctx.fillRect(-btnW / 2, -btnH / 2, btnW, btnH);
+  // Button highlight top
+  ctx.fillStyle = '#ff7070';
+  ctx.fillRect(-btnW / 2, -btnH / 2, btnW, 10);
+  // Button dark bottom
+  ctx.fillStyle = '#a02020';
+  ctx.fillRect(-btnW / 2, btnH / 2 - 8, btnW, 8);
+  // Button text
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 22px "Courier New", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('▶  开始游戏', 0, 8);
+  ctx.textAlign = 'left';
+
+  ctx.restore();
+
+  // Subtitle hint
+  ctx.fillStyle = 'rgba(200,240,255,0.7)';
+  ctx.font = '14px "Courier New", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('移动鼠标探索海洋  点击捕鱼  上岸经营寿司店', VW / 2, btnY + btnH + 32);
+  ctx.textAlign = 'left';
+
+  // Store button bounds for click detection
+  GS._titleBtnBounds = { x: btnX, y: btnY, w: btnW, h: btnH };
 }
 
 // ============ TRANSITION ============
@@ -2453,6 +2629,11 @@ const keys = {};
 
 document.addEventListener('keydown', e => {
   keys[e.key] = true;
+  if (GS.scene === 'title' && (e.key === ' ' || e.key === 'Enter')) {
+    e.preventDefault();
+    startGame();
+    return;
+  }
   if (e.key === 'e' || e.key === 'E') {
     if (GS.scene === 'fishing') goAshore();
   }
@@ -2473,6 +2654,13 @@ canvas.addEventListener('mousemove', e => {
 
 // Left-click to catch fish at cursor position
 canvas.addEventListener('click', e => {
+  if (GS.scene === 'title') {
+    const b = GS._titleBtnBounds;
+    if (b && e.clientX >= b.x && e.clientX <= b.x + b.w && e.clientY >= b.y && e.clientY <= b.y + b.h) {
+      startGame();
+    }
+    return;
+  }
   if (GS.scene === 'fishing') {
     const rect = canvas.getBoundingClientRect();
     const mx = (e.clientX - rect.left) + cam.x;
@@ -2748,6 +2936,15 @@ function loop(ts) {
 
   ctx.clearRect(0, 0, VW, VH);
 
+  if (GS.scene === 'title') {
+    document.getElementById('fishingHud').style.display = 'none';
+    document.getElementById('restaurantHud').style.display = 'none';
+    GS.time += dt;
+    drawTitle();
+    requestAnimationFrame(loop);
+    return;
+  }
+
   if (GS.scene === 'fishing') {
     document.getElementById('fishingHud').style.display = 'flex';
     document.getElementById('restaurantHud').style.display = 'none';
@@ -2862,7 +3059,9 @@ function loop(ts) {
 
     if (transitionProgress >= 1) {
       GS.scene = 'fishing';
+      fishes = [];
       generateDecorations();
+      for (let i = 0; i < 28; i++) spawnFish(true);
       showMessage('🤿 再次潜入深海！', 2000);
     }
 
@@ -2891,6 +3090,14 @@ function loop(ts) {
 }
 
 // ============ INIT ============
+function startGame() {
+  generateDecorations();
+  fishes = [];
+  for (let i = 0; i < 28; i++) spawnFish(true);
+  GS.scene = 'fishing';
+  showMessage('🤿 移动鼠标探索海洋，点击或空格键捕鱼！', 4000);
+}
+
 function init() {
   diver.x = WW / 2;
   diver.y = WH / 2;
@@ -2900,9 +3107,6 @@ function init() {
   camTarget.y = cam.y;
   mouseScreen.x = VW / 2;
   mouseScreen.y = VH / 2;
-  generateDecorations();
-  for (let i = 0; i < 28; i++) spawnFish(true);
-  showMessage('🤿 移动鼠标探索海洋，点击或空格键捕鱼！', 4000);
   requestAnimationFrame(loop);
 }
 
