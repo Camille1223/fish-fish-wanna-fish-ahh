@@ -60,12 +60,21 @@ const H = WH;
 
 // Camera (top-left corner of viewport in world coords)
 let cam = { x: 0, y: 0 };
+let camTarget = { x: 0, y: 0 };
+let mouseScreen = { x: 0, y: 0 };
 
 window.addEventListener('resize', () => {
   VW = window.innerWidth;
   VH = window.innerHeight;
   canvas.width = VW;
   canvas.height = VH;
+  // Re-clamp camera so it stays within world bounds after resize
+  cam.x = Math.max(0, Math.min(WW - VW, cam.x));
+  cam.y = Math.max(0, Math.min(WH - VH, cam.y));
+  camTarget.x = cam.x;
+  camTarget.y = cam.y;
+  mouseScreen.x = VW / 2;
+  mouseScreen.y = VH / 2;
 });
 
 // ============ GAME STATE ============
@@ -1480,11 +1489,13 @@ function drawDiver() {
 
 // ============ RESTAURANT DRAWING ============
 function drawRestaurant() {
-  // Scale restaurant scene (designed at 900×600) to fit viewport
-  const rx = VW / 900;
-  const ry = VH / 600;
+  // Scale restaurant scene (designed at 900×600) to fill viewport uniformly
+  const scale = Math.max(VW / 900, VH / 600);
+  const offsetX = (VW - 900 * scale) / 2;
+  const offsetY = (VH - 600 * scale) / 2;
   ctx.save();
-  ctx.scale(rx, ry);
+  ctx.translate(offsetX, offsetY);
+  ctx.scale(scale, scale);
 
   // 天空渐变
   const skyGrad = ctx.createLinearGradient(0, 0, 0, 260);
@@ -2430,11 +2441,6 @@ function updateRestaurant(dt) {
 // ============ INPUT ============
 const keys = {};
 
-// Mouse position in screen coords (updated on every mousemove)
-let mouseScreen = { x: VW / 2, y: VH / 2 };
-
-// Camera target — driven by mouse position
-let camTarget = { x: 0, y: 0 };
 
 document.addEventListener('keydown', e => {
   keys[e.key] = true;
@@ -2569,9 +2575,12 @@ function catchFish(f) {
 }
 
 function handleRestaurantClick(screenX, screenY) {
-  // Convert screen coords to restaurant's internal 900×600 coordinate system
-  const mx = screenX / (VW / 900);
-  const my = screenY / (VH / 600);
+  // Inverse of drawRestaurant's scale+translate
+  const scale = Math.max(VW / 900, VH / 600);
+  const offsetX = (VW - 900 * scale) / 2;
+  const offsetY = (VH - 600 * scale) / 2;
+  const mx = (screenX - offsetX) / scale;
+  const my = (screenY - offsetY) / scale;
 
   // Check sell all button
   if (mx >= 15 && mx <= 95 && my >= 545 && my <= 570) {
