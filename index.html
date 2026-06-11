@@ -6,13 +6,27 @@
 <title>深海捕鱼 & 寿司店</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Microsoft YaHei', sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
+  body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Microsoft YaHei', 'Georgia', serif; touch-action: none; user-select: none; -webkit-user-select: none; }
   #gameCanvas { display: block; cursor: pointer; width: 100vw; height: 100vh; touch-action: none; -webkit-touch-callout: none; }
   #ui { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; }
 
   /* ── Top HUD bar ── */
   .hud { position: absolute; top: env(safe-area-inset-top, 8px); left: 0; right: 0; display: flex; flex-wrap: wrap; align-items: center; padding: 6px 10px; gap: 5px; }
-  .hud-item { background: rgba(0,5,20,0.85); border: 1px solid rgba(100,200,255,0.45); border-radius: 10px; padding: 5px 10px; color: #9ef; font-size: 12px; backdrop-filter: blur(4px); min-height: 34px; display: inline-flex; align-items: center; white-space: nowrap; }
+  .hud-item {
+    background: rgba(2,15,40,0.78);
+    border: 1px solid rgba(80,180,255,0.35);
+    border-top: 1px solid rgba(140,220,255,0.5);
+    border-radius: 10px;
+    padding: 5px 10px;
+    color: #b8e8ff;
+    font-size: 12px;
+    backdrop-filter: blur(8px);
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    box-shadow: 0 2px 12px rgba(0,80,160,0.35), inset 0 1px 0 rgba(160,230,255,0.12);
+  }
 
   /* ── Shore / Dive action button — fixed bottom center ── */
   #shoreBtn, #diveBtn {
@@ -22,25 +36,29 @@
     transform: translateX(-50%);
     pointer-events: all;
     cursor: pointer;
-    background: rgba(0,5,20,0.9);
-    border: 2px solid #ffe;
+    background: rgba(2,15,40,0.88);
+    border: 1.5px solid rgba(200,240,255,0.5);
+    border-top: 1.5px solid rgba(220,248,255,0.75);
     border-radius: 24px;
     padding: 10px 28px;
-    color: #ffe;
+    color: #dff4ff;
     font-size: 16px;
-    font-family: 'Microsoft YaHei', sans-serif;
-    backdrop-filter: blur(6px);
-    box-shadow: 0 4px 16px rgba(255,220,100,0.3);
+    font-family: 'Microsoft YaHei', 'Georgia', serif;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0,120,220,0.4), inset 0 1px 0 rgba(200,240,255,0.15);
     white-space: nowrap;
     z-index: 10;
+    transition: box-shadow 0.15s, border-color 0.15s;
   }
-  #diveBtn { border-color: #8ff; color: #8ff; box-shadow: 0 4px 16px rgba(100,220,255,0.3); }
+  #shoreBtn:hover { box-shadow: 0 4px 28px rgba(0,160,255,0.6); border-color: rgba(160,230,255,0.8); }
+  #diveBtn { border-color: rgba(100,210,255,0.55); color: #a0e8ff; box-shadow: 0 4px 20px rgba(0,150,255,0.35), inset 0 1px 0 rgba(140,220,255,0.15); }
+  #diveBtn:hover { box-shadow: 0 4px 28px rgba(0,180,255,0.65); }
 
-  .oxygen-bar { width: 80px; height: 10px; background: rgba(0,0,0,0.5); border-radius: 6px; overflow: hidden; border: 1px solid rgba(100,200,255,0.4); }
-  .oxygen-fill { height: 100%; background: linear-gradient(90deg, #00aaff, #00ffcc); border-radius: 6px; transition: width 0.3s; box-shadow: 0 0 6px #0af; }
+  .oxygen-bar { width: 80px; height: 10px; background: rgba(0,0,0,0.5); border-radius: 6px; overflow: hidden; border: 1px solid rgba(80,180,255,0.4); }
+  .oxygen-fill { height: 100%; background: linear-gradient(90deg, #0080cc, #00c8e8, #40f0d0); border-radius: 6px; transition: width 0.3s; box-shadow: 0 0 8px rgba(0,200,240,0.7); }
 
-  #msgBox { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) translateY(-40px); background: rgba(0,5,30,0.92); border: 1px solid rgba(100,220,255,0.6); border-radius: 14px; padding: 10px 28px; color: #fff; font-size: 16px; display: none; text-align: center; pointer-events: none; box-shadow: 0 4px 20px rgba(0,150,255,0.4); max-width: 90vw; }
-  #sharkHint { position: fixed; top: 45%; left: 50%; transform: translateX(-50%); color: #ff4; font-size: 14px; font-weight: bold; display: none; text-shadow: 0 0 12px #fa0, 0 0 4px #f80; pointer-events: none; }
+  #msgBox { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) translateY(-40px); background: rgba(2,12,35,0.90); border: 1px solid rgba(80,180,255,0.5); border-top: 1px solid rgba(140,220,255,0.7); border-radius: 14px; padding: 10px 28px; color: #cce8ff; font-size: 16px; display: none; text-align: center; pointer-events: none; box-shadow: 0 6px 28px rgba(0,100,220,0.5), inset 0 1px 0 rgba(180,230,255,0.1); max-width: 90vw; backdrop-filter: blur(10px); }
+  #sharkHint { position: fixed; top: 45%; left: 50%; transform: translateX(-50%); color: #ffee44; font-size: 14px; font-weight: bold; display: none; text-shadow: 0 0 16px rgba(255,160,0,0.9), 0 0 6px rgba(255,80,0,0.6); pointer-events: none; }
 </style>
 </head>
 <body>
@@ -103,21 +121,46 @@ updateWorldSize();
 let touchStartPos = null;
 let touchIsDrag = false;
 let touchActive = false;
+let restaurantTouchStart = null;
 
-window.addEventListener('resize', () => {
+window.addEventListener('resize', handleResize);
+// orientationchange fires before resize on iOS; we handle both
+window.addEventListener('orientationchange', () => {
+  // Small delay lets browser finish rotating before we read dimensions
+  setTimeout(handleResize, 120);
+});
+
+function handleResize() {
+  const wasPortrait = VW < VH;
   VW = window.innerWidth;
   VH = window.innerHeight;
   canvas.width = VW;
   canvas.height = VH;
+  const isPortrait = VW < VH;
   updateWorldSize();
-  // Re-clamp camera so it stays within world bounds after resize
-  cam.x = Math.max(0, Math.min(currentWW - VW, cam.x));
-  cam.y = Math.max(0, Math.min(currentWH - VH, cam.y));
+
+  // Re-clamp camera
+  cam.x = Math.min(Math.max(0, currentWW - VW), Math.max(0, cam.x));
+  cam.y = Math.min(Math.max(0, currentWH - VH), Math.max(0, cam.y));
   camTarget.x = cam.x;
   camTarget.y = cam.y;
   mouseScreen.x = VW / 2;
   mouseScreen.y = VH / 2;
-});
+
+  // If orientation actually flipped during gameplay, regenerate the scene
+  if (wasPortrait !== isPortrait && GS.scene === 'fishing') {
+    generateDecorations();
+    fishes = [];
+    for (let i = 0; i < 28; i++) spawnFish(true);
+    // Re-centre camera on diver
+    diver.x = currentWW / 2;
+    diver.y = currentWH / 2;
+    cam.x = Math.min(Math.max(0, currentWW - VW), Math.max(0, currentWW / 2 - VW / 2));
+    cam.y = Math.min(Math.max(0, currentWH - VH), Math.max(0, currentWH / 2 - VH / 2));
+    camTarget.x = cam.x;
+    camTarget.y = cam.y;
+  }
+}
 
 // ============ GAME STATE ============
 const GS = {
@@ -193,50 +236,51 @@ function generateDecorations() {
   const z = GS.zone;
   const cW = currentWW, cH = currentWH;
 
-  // 海草 (更多，分布更广)
+  // 海草 (更多，分布更广) — near/mid foreground
   for (let i = 0; i < 20; i++) {
     const x = Math.random() * cW;
-    decorations.push({ type: 'seaweed', x, y: cH, height: 50 + Math.random() * 110, phase: Math.random() * Math.PI * 2, color: z === 2 ? '#1a4a2a' : '#2d8a4a' });
+    const dz = 0.05 + Math.random() * 0.45; // near foreground
+    decorations.push({ type: 'seaweed', x, y: cH, height: 50 + Math.random() * 110, phase: Math.random() * Math.PI * 2, color: z === 2 ? '#1a4a2a' : '#2d8a4a', z: dz });
   }
 
-  // 珊瑚 (各区域都有)
+  // 珊瑚 — near/mid
   const coralCount = z === 0 ? 6 : z === 1 ? 14 : 5;
   for (let i = 0; i < coralCount; i++) {
-    decorations.push({ type: 'coral', x: Math.random() * cW, y: cH - 30 + Math.random() * 20, size: 22 + Math.random() * 35, color: z === 0 ? '#ff9b6d' : z === 1 ? '#ff6b9d' : '#8855ff' });
+    decorations.push({ type: 'coral', x: Math.random() * cW, y: cH - 30 + Math.random() * 20, size: 22 + Math.random() * 35, color: z === 0 ? '#ff9b6d' : z === 1 ? '#ff6b9d' : '#8855ff', z: 0.1 + Math.random() * 0.5 });
   }
 
-  // 岩石
+  // 岩石 — mid to far
   for (let i = 0; i < 10; i++) {
-    decorations.push({ type: 'rock', x: Math.random() * cW, y: cH - 20 + Math.random() * 30, size: 18 + Math.random() * 32, color: z === 2 ? '#223344' : '#445566' });
+    decorations.push({ type: 'rock', x: Math.random() * cW, y: cH - 20 + Math.random() * 30, size: 18 + Math.random() * 32, color: z === 2 ? '#223344' : '#445566', z: 0.3 + Math.random() * 0.55 });
   }
 
-  // 海星 (浅海、珊瑚礁)
+  // 海星 — on the seabed, near
   if (z <= 1) {
     for (let i = 0; i < 7; i++) {
-      decorations.push({ type: 'starfish', x: 40 + Math.random() * (cW - 80), y: cH - 15, size: 12 + Math.random() * 14, color: z === 0 ? '#ff7744' : '#ff44aa', angle: Math.random() * Math.PI });
+      decorations.push({ type: 'starfish', x: 40 + Math.random() * (cW - 80), y: cH - 15, size: 12 + Math.random() * 14, color: z === 0 ? '#ff7744' : '#ff44aa', angle: Math.random() * Math.PI, z: 0.05 + Math.random() * 0.25 });
     }
   }
 
-  // 扇形珊瑚 (珊瑚礁)
+  // 扇形珊瑚 — mid
   if (z === 1) {
     for (let i = 0; i < 5; i++) {
-      decorations.push({ type: 'fan_coral', x: Math.random() * cW, y: cH - 10, height: 80 + Math.random() * 80, color: ['#ff6b9d','#ff9933','#33ccff','#ff55dd'][Math.floor(Math.random()*4)], phase: Math.random() * Math.PI * 2 });
+      decorations.push({ type: 'fan_coral', x: Math.random() * cW, y: cH - 10, height: 80 + Math.random() * 80, color: ['#ff6b9d','#ff9933','#33ccff','#ff55dd'][Math.floor(Math.random()*4)], phase: Math.random() * Math.PI * 2, z: 0.2 + Math.random() * 0.4 });
     }
   }
 
-  // 海底城堡 (珊瑚礁或随机)
+  // 城堡 — far background
   if (z >= 1 || Math.random() < 0.5) {
-    decorations.push({ type: 'castle', x: 180 + Math.random() * (cW - 360), y: cH - 10 });
+    decorations.push({ type: 'castle', x: 180 + Math.random() * (cW - 360), y: cH - 10, z: 0.65 + Math.random() * 0.3 });
   }
 
-  // 沉船 (深海为主，珊瑚礁偶尔有)
+  // 沉船 — far background
   if (z === 2 || (z === 1 && Math.random() < 0.6)) {
-    decorations.push({ type: 'shipwreck', x: 100 + Math.random() * (cW - 300), y: cH - 20 });
+    decorations.push({ type: 'shipwreck', x: 100 + Math.random() * (cW - 300), y: cH - 20, z: 0.6 + Math.random() * 0.35 });
   }
 
-  // 气泡柱 (随机位置从海底冒出)
+  // 气泡柱 — near
   for (let i = 0; i < 4; i++) {
-    decorations.push({ type: 'vent', x: Math.random() * cW, y: cH - 10, phase: Math.random() * Math.PI * 2 });
+    decorations.push({ type: 'vent', x: Math.random() * cW, y: cH - 10, phase: Math.random() * Math.PI * 2, z: 0.1 + Math.random() * 0.3 });
   }
 }
 
@@ -272,6 +316,9 @@ function spawnFish(forceInViewport) {
     vxSign = side;
     vySign = Math.random() < 0.5 ? -1 : 1;
   }
+  // z: 0=closest foreground, 1=farthest background
+  // Bias: most fish in mid-range (0.25–0.75), fewer at extremes
+  const fishZ = 0.15 + Math.random() * 0.85;
   fishes.push({
     id: Math.random().toString(36).substr(2),
     ...type,
@@ -283,166 +330,299 @@ function spawnFish(forceInViewport) {
     hp: type.clicks,
     maxHp: type.clicks,
     scared: false,
-    scaredTimer: 0
+    scaredTimer: 0,
+    z: fishZ
   });
 }
 
 // ============ BUBBLES ============
 function spawnBubble(x, y) {
-  bubbles.push({ x, y, r: 3 + Math.random() * 5, vy: -(0.5 + Math.random() * 1.5), life: 1.0, dx: (Math.random() - 0.5) * 0.4 });
+  bubbles.push({ x, y, r: 3 + Math.random() * 5, vy: -(0.5 + Math.random() * 1.5), life: 1.0, dx: (Math.random() - 0.5) * 0.4, z: 0.1 + Math.random() * 0.6 });
 }
 
 // ============ DRAW FUNCTIONS ============
 function drawBackground() {
   const z = ZONES[GS.zone];
   const darkMult = GS.weather === 'dark' ? 0.35 : 1.0;
+  const isDeep = GS.zone === 2;
+  const isCoral = GS.zone === 1;
 
-  // Fill entire viewport — gradient spans world height but we draw over viewport
-  // Use cam.y to sample the right part of the vertical gradient
-  const gradTop = cam.y / currentWH;           // 0 at top, 1 at bottom
+  // ── Layer 1: Deep volumetric water gradient ──
+  const gradTop = cam.y / currentWH;
   const gradBot = (cam.y + VH) / currentWH;
-  const grad = ctx.createLinearGradient(0, 0, 0, VH);
-  grad.addColorStop(0, shadeColor(z.bgTop, darkMult * (1 - gradTop * 0.4)));
-  grad.addColorStop(0.5, shadeColor(z.bgTop, darkMult * (1 - (gradTop + gradBot) * 0.2)));
-  grad.addColorStop(1, shadeColor(z.bgBot, darkMult * (1 - gradBot * 0.3)));
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, VW, VH);  // screen space — always covers full viewport
 
-  if (GS.zone < 2) {
-    const hazeGrad = ctx.createRadialGradient(VW / 2, 0, 50, VW / 2, 0, VH);
-    hazeGrad.addColorStop(0, 'rgba(100,200,255,0.06)');
-    hazeGrad.addColorStop(1, 'rgba(0,50,120,0)');
-    ctx.fillStyle = hazeGrad;
-    ctx.fillRect(0, 0, VW, VH);
+  // More realistic water colors per zone
+  const waterColors = [
+    // shallow: bright cyan-turquoise
+    ['#0d7fa8','#0a6090','#083f6a','#041e3a'],
+    // coral: deeper blue-green with emerald tint
+    ['#0a5c78','#084a66','#063354','#031c35'],
+    // deep: near-black abyssal blue
+    ['#061828','#040f1e','#020a14','#01060d']
+  ][GS.zone];
+
+  const grad = ctx.createLinearGradient(0, 0, 0, VH);
+  const dm = darkMult;
+  grad.addColorStop(0,   shadeColor(waterColors[0], dm * (1 - gradTop * 0.5)));
+  grad.addColorStop(0.3, shadeColor(waterColors[1], dm * (1 - (gradTop * 0.3 + gradBot * 0.1))));
+  grad.addColorStop(0.7, shadeColor(waterColors[2], dm * (1 - gradBot * 0.25)));
+  grad.addColorStop(1,   shadeColor(waterColors[3], dm * (1 - gradBot * 0.15)));
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, VW, VH);
+
+  // ── Layer 2: Horizontal depth-haze bands ──
+  if (GS.zone < 2 && GS.weather !== 'dark') {
+    for (let band = 0; band < 3; band++) {
+      const by = VH * (0.15 + band * 0.25);
+      const bh = ctx.createLinearGradient(0, by - 40, 0, by + 40);
+      bh.addColorStop(0, 'rgba(100,210,255,0)');
+      bh.addColorStop(0.5, `rgba(80,190,240,${0.03 - band * 0.008})`);
+      bh.addColorStop(1, 'rgba(60,160,220,0)');
+      ctx.fillStyle = bh;
+      ctx.fillRect(0, by - 40, VW, 80);
+    }
   }
 
-  // Everything below is in camera (world) space — called after ctx.translate(-cam.x,-cam.y)
+  // Everything below in camera (world) space
+  // ── Layer 3: Volumetric god rays (Tyndall effect) ──
   if (GS.zone <= 1 && GS.weather !== 'dark') {
     ctx.save();
-    const rayCount = GS.zone === 0 ? 9 : 5;
-    const rayAlpha = GS.zone === 0 ? 0.07 : 0.04;
+    const rayCount = GS.zone === 0 ? 11 : 7;
+    const rayAlpha = GS.zone === 0 ? 0.055 : 0.03;
     for (let i = 0; i < rayCount; i++) {
-      const rx = 80 + i * (currentWW / rayCount) + Math.sin(GS.time * 0.4 + i * 1.3) * 30;
-      const rayWidth = 45 + Math.sin(GS.time * 0.3 + i) * 18;
-      const grad2 = ctx.createLinearGradient(rx, 0, rx, currentWH);
-      grad2.addColorStop(0, `rgba(180,240,255,${rayAlpha})`);
-      grad2.addColorStop(0.4, `rgba(120,200,255,${rayAlpha * 0.5})`);
-      grad2.addColorStop(1, 'rgba(0,100,200,0)');
+      const baseX = currentWW * (i / rayCount);
+      const rx = baseX + Math.sin(GS.time * 0.35 + i * 1.57) * 45;
+      const spread = 60 + Math.sin(GS.time * 0.22 + i) * 25;
+      // Each ray is a thin tapered wedge from surface
+      const grad2 = ctx.createLinearGradient(0, cam.y, 0, cam.y + VH);
+      grad2.addColorStop(0, `rgba(160,235,255,${rayAlpha * 1.5})`);
+      grad2.addColorStop(0.25, `rgba(120,205,250,${rayAlpha})`);
+      grad2.addColorStop(0.6, `rgba(80,170,230,${rayAlpha * 0.4})`);
+      grad2.addColorStop(1, 'rgba(40,100,180,0)');
       ctx.fillStyle = grad2;
       ctx.beginPath();
-      ctx.moveTo(rx - rayWidth * 0.3, 0);
-      ctx.lineTo(rx + rayWidth + Math.sin(GS.time * 0.2 + i) * 20, currentWH);
-      ctx.lineTo(rx - rayWidth * 0.5 + Math.sin(GS.time * 0.2 + i) * 20, currentWH);
-      ctx.lineTo(rx - rayWidth * 0.6, 0);
+      const topW = 6 + Math.sin(GS.time * 0.5 + i) * 3;
+      ctx.moveTo(rx - topW, cam.y);
+      ctx.lineTo(rx + topW, cam.y);
+      ctx.lineTo(rx + spread + Math.sin(GS.time * 0.18 + i) * 15, cam.y + currentWH);
+      ctx.lineTo(rx - spread * 0.7 + Math.sin(GS.time * 0.18 + i) * 15, cam.y + currentWH);
       ctx.closePath();
       ctx.fill();
     }
     ctx.restore();
   }
 
+  // ── Layer 4: Caustic light patterns (water surface refraction) ──
   if (GS.zone === 0 && GS.weather !== 'dark') {
     ctx.save();
-    ctx.globalAlpha = 0.04;
-    for (let i = 0; i < 16; i++) {
-      const cx = ((GS.time * 25 + i * 95) % (currentWW + 100)) - 50;
-      const cy = 30 + (i % 4) * 80 + Math.sin(GS.time + i) * 18;
-      const r = 22 + Math.sin(GS.time * 0.7 + i) * 9;
-      const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-      cg.addColorStop(0, 'rgba(200,240,255,0.8)');
-      cg.addColorStop(1, 'rgba(100,180,255,0)');
+    // Flowing caustic blobs
+    for (let i = 0; i < 28; i++) {
+      const seed = i * 137.508;
+      const cx = ((seed + GS.time * 18) % (currentWW + 80)) - 40;
+      const cy = cam.y + 20 + (i % 6) * (VH * 0.14) + Math.sin(GS.time * 0.8 + seed * 0.1) * 22;
+      const r = 14 + Math.sin(GS.time * 1.1 + i * 0.7) * 7;
+      const alpha = (0.04 + Math.sin(GS.time * 1.8 + i) * 0.02) * (1 - (cy - cam.y) / currentWH * 2.5);
+      if (alpha <= 0) continue;
+      const cg = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.25, 0, cx, cy, r);
+      cg.addColorStop(0, `rgba(210,250,255,${alpha * 2.2})`);
+      cg.addColorStop(0.4, `rgba(160,225,250,${alpha})`);
+      cg.addColorStop(1, 'rgba(80,160,220,0)');
       ctx.fillStyle = cg;
       ctx.beginPath();
-      ctx.ellipse(cx, cy, r, r * 0.5, GS.time * 0.1 + i, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, r, r * 0.55, GS.time * 0.25 + i * 0.6, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
     ctx.restore();
-  }
-
-  if (GS.zone === 2) {
+  } else if (GS.zone === 1 && GS.weather !== 'dark') {
+    // Coral reef: dimmer caustics
     ctx.save();
-    for (let i = 0; i < 22; i++) {
-      const px = (Math.sin(i * 2.3 + GS.time * 0.1) * 0.5 + 0.5) * currentWW;
-      const py = (Math.sin(i * 1.7 + GS.time * 0.08) * 0.5 + 0.5) * (currentWH - 80) + 30;
-      const pr = 2 + Math.sin(GS.time * 2 + i) * 1;
-      const glow = ctx.createRadialGradient(px, py, 0, px, py, pr * 5);
-      const hue = (i * 40 + GS.time * 20) % 360;
-      glow.addColorStop(0, `hsla(${hue},100%,80%,0.6)`);
-      glow.addColorStop(1, `hsla(${hue},100%,60%,0)`);
-      ctx.fillStyle = glow;
+    for (let i = 0; i < 14; i++) {
+      const seed = i * 97.3;
+      const cx = ((seed + GS.time * 12) % (currentWW + 60)) - 30;
+      const cy = cam.y + 30 + (i % 4) * (VH * 0.22) + Math.sin(GS.time * 0.6 + i) * 18;
+      const r = 18 + Math.sin(GS.time * 0.9 + i) * 8;
+      const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      cg.addColorStop(0, 'rgba(140,210,240,0.035)');
+      cg.addColorStop(1, 'rgba(80,140,200,0)');
+      ctx.fillStyle = cg;
       ctx.beginPath();
-      ctx.arc(px, py, pr * 5, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, r, r * 0.5, GS.time * 0.2 + i, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
   }
 
+  // ── Layer 5: Bioluminescent particles (deep sea) ──
+  if (isDeep) {
+    ctx.save();
+    for (let i = 0; i < 32; i++) {
+      const px = (Math.sin(i * 2.3 + GS.time * 0.08) * 0.5 + 0.5) * currentWW;
+      const py = (Math.sin(i * 1.7 + GS.time * 0.06) * 0.5 + 0.5) * (currentWH - 100) + 40;
+      const pulse = 0.5 + Math.sin(GS.time * 2.5 + i * 0.9) * 0.5;
+      const pr = 1.5 + pulse * 2;
+      const hue = 160 + (i * 23) % 80; // blue-cyan-green range
+      const alpha = 0.3 + pulse * 0.5;
+      // Soft outer glow
+      const glow = ctx.createRadialGradient(px, py, 0, px, py, pr * 7);
+      glow.addColorStop(0, `hsla(${hue},100%,75%,${alpha * 0.9})`);
+      glow.addColorStop(0.3, `hsla(${hue},100%,65%,${alpha * 0.4})`);
+      glow.addColorStop(1, `hsla(${hue},100%,50%,0)`);
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(px, py, pr * 7, 0, Math.PI * 2);
+      ctx.fill();
+      // Bright core
+      ctx.fillStyle = `hsla(${hue},100%,90%,${alpha})`;
+      ctx.beginPath();
+      ctx.arc(px, py, pr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // ── Layer 6: Suspended particles (marine snow) ──
+  ctx.save();
+  const particleCount = isDeep ? 40 : isCoral ? 25 : 18;
+  const particleAlpha = isDeep ? 0.3 : 0.18;
+  for (let i = 0; i < particleCount; i++) {
+    const seed = i * 61.8;
+    const px = (seed % currentWW);
+    const drift = Math.sin(GS.time * 0.3 + i * 0.4) * 12;
+    const py = ((seed * 3.7 + GS.time * (8 + (i % 4) * 3)) % currentWH);
+    const ps = 0.8 + (i % 3) * 0.6;
+    ctx.globalAlpha = particleAlpha * (0.5 + Math.sin(GS.time + i) * 0.5);
+    ctx.fillStyle = isDeep ? 'rgba(100,200,255,1)' : 'rgba(200,240,255,1)';
+    ctx.beginPath();
+    ctx.arc(px + drift, py, ps, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  // ── Layer 7: Underwater current streaks ──
   if (GS.weather === 'current') {
     ctx.save();
-    for (let i = 0; i < 8; i++) {
-      const cx = ((GS.time * 90 + i * 200) % (currentWW + 200)) - 100;
-      const cy = 80 + i * 90 + Math.sin(i * 1.2) * 40;
-      const cg = ctx.createLinearGradient(cx - 20, cy, cx + 100, cy);
-      cg.addColorStop(0, 'rgba(100,200,255,0)');
-      cg.addColorStop(0.3, 'rgba(150,220,255,0.15)');
+    for (let i = 0; i < 10; i++) {
+      const cx = ((GS.time * 110 + i * 180) % (currentWW + 250)) - 120;
+      const cy = cam.y + 70 + i * 85 + Math.sin(i * 1.4) * 35;
+      const cg = ctx.createLinearGradient(cx - 30, cy, cx + 120, cy);
+      cg.addColorStop(0, 'rgba(120,210,255,0)');
+      cg.addColorStop(0.2, 'rgba(160,230,255,0.14)');
+      cg.addColorStop(0.6, 'rgba(140,220,255,0.09)');
       cg.addColorStop(1, 'rgba(100,200,255,0)');
       ctx.fillStyle = cg;
       ctx.beginPath();
-      ctx.ellipse(cx + 40, cy, 75, 10, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx + 45, cy, 85, 7 + Math.sin(i) * 3, Math.sin(i * 0.5) * 0.08, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
   }
 
-  // 3D 沙底
-  const isDeep = GS.zone === 2;
+  // ── Layer 8: Seabed — detailed sediment ──
   ctx.save();
-  ctx.fillStyle = isDeep ? 'rgba(0,0,0,0.6)' : 'rgba(80,50,10,0.35)';
-  ctx.beginPath();
-  ctx.moveTo(0, currentWH);
-  for (let x = 0; x <= currentWW; x += 25) {
-    ctx.lineTo(x, currentWH - 30 + Math.sin(x * 0.035 + GS.time * 0.15) * 8 + 6);
+  // Shadow cast on seabed edge
+  const shadowH = isDeep ? 0 : 18;
+  if (!isDeep) {
+    const shadowG = ctx.createLinearGradient(0, currentWH - 50 - shadowH, 0, currentWH - 50);
+    shadowG.addColorStop(0, 'rgba(0,0,0,0)');
+    shadowG.addColorStop(1, 'rgba(0,20,40,0.45)');
+    ctx.fillStyle = shadowG;
+    ctx.beginPath();
+    ctx.moveTo(0, currentWH);
+    for (let x = 0; x <= currentWW; x += 20) {
+      ctx.lineTo(x, currentWH - 32 + Math.sin(x * 0.033 + GS.time * 0.13) * 9 + 8);
+    }
+    ctx.lineTo(currentWW, currentWH); ctx.lineTo(0, currentWH);
+    ctx.closePath();
+    ctx.fill();
   }
-  ctx.lineTo(currentWW, currentWH); ctx.lineTo(0, currentWH);
-  ctx.closePath();
-  ctx.fill();
 
-  const sandGrad = ctx.createLinearGradient(0, currentWH - 55, 0, currentWH);
+  // Seabed main body
+  const sandGrad = ctx.createLinearGradient(0, currentWH - 65, 0, currentWH);
   if (isDeep) {
-    sandGrad.addColorStop(0, '#0e1e2c');
-    sandGrad.addColorStop(0.5, '#0a1520');
-    sandGrad.addColorStop(1, '#060c14');
+    sandGrad.addColorStop(0, '#0b1a27');
+    sandGrad.addColorStop(0.4, '#081218');
+    sandGrad.addColorStop(1, '#040a10');
   } else if (GS.zone === 1) {
-    sandGrad.addColorStop(0, '#b89050');
-    sandGrad.addColorStop(0.5, '#9a7838');
-    sandGrad.addColorStop(1, '#806030');
+    sandGrad.addColorStop(0, '#c49555');
+    sandGrad.addColorStop(0.3, '#a87840');
+    sandGrad.addColorStop(0.7, '#8a6030');
+    sandGrad.addColorStop(1, '#6a4520');
   } else {
-    sandGrad.addColorStop(0, '#d4b070');
-    sandGrad.addColorStop(0.5, '#c09050');
-    sandGrad.addColorStop(1, '#a07838');
+    sandGrad.addColorStop(0, '#e0bc70');
+    sandGrad.addColorStop(0.3, '#c8a055');
+    sandGrad.addColorStop(0.7, '#a88040');
+    sandGrad.addColorStop(1, '#886030');
   }
   ctx.fillStyle = sandGrad;
   ctx.beginPath();
   ctx.moveTo(0, currentWH);
-  for (let x = 0; x <= currentWW; x += 25) {
-    ctx.lineTo(x, currentWH - 30 + Math.sin(x * 0.035 + GS.time * 0.15) * 8);
+  for (let x = 0; x <= currentWW; x += 20) {
+    ctx.lineTo(x, currentWH - 32 + Math.sin(x * 0.033 + GS.time * 0.13) * 9);
   }
   ctx.lineTo(currentWW, currentWH); ctx.lineTo(0, currentWH);
   ctx.closePath();
   ctx.fill();
 
+  // Seabed surface ripple lines
   if (!isDeep) {
-    ctx.strokeStyle = 'rgba(255,220,130,0.22)';
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 7; i++) {
+      const alpha = 0.15 - i * 0.015;
+      ctx.strokeStyle = `rgba(255,225,140,${alpha})`;
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
-      for (let x = 0; x <= currentWW; x += 25) {
-        const y = currentWH - 28 + i * 4 + Math.sin(x * 0.035 + GS.time * 0.15 + i * 0.5) * 5;
+      for (let x = 0; x <= currentWW; x += 20) {
+        const y = currentWH - 30 + i * 4.5 + Math.sin(x * 0.033 + GS.time * 0.13 + i * 0.4) * 6;
         x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
       ctx.stroke();
     }
+    // Scattered sand grains (tiny bright dots)
+    ctx.fillStyle = 'rgba(255,235,180,0.35)';
+    for (let i = 0; i < 60; i++) {
+      const gx = (i * 173.5) % currentWW;
+      const gy = currentWH - 28 + (i % 5) * 5;
+      ctx.beginPath();
+      ctx.arc(gx, gy, 0.8 + (i % 3) * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
+  ctx.restore();
+
+  // ── Layer 9: Depth fog planes (atmospheric perspective) ──
+  // Multiple translucent planes at increasing depths give strong 3D layering
+  ctx.save();
+  const fogColor = isDeep
+    ? [2, 8, 20]
+    : GS.zone === 1
+      ? [5, 35, 75]
+      : [8, 55, 120];
+
+  const fogPlanes = [
+    { z: 0.35, alpha: 0.06 },
+    { z: 0.55, alpha: 0.10 },
+    { z: 0.72, alpha: 0.14 },
+    { z: 0.88, alpha: 0.19 },
+  ];
+  for (const fp of fogPlanes) {
+    // Each plane is a horizontal band that fades in from bottom (where seabed is)
+    // and covers the full viewport, but stronger in the lower half
+    const planeG = ctx.createLinearGradient(0, cam.y + VH * 0.3, 0, cam.y + VH);
+    planeG.addColorStop(0, `rgba(${fogColor[0]},${fogColor[1]},${fogColor[2]},0)`);
+    planeG.addColorStop(0.5, `rgba(${fogColor[0]},${fogColor[1]},${fogColor[2]},${fp.alpha * 0.6})`);
+    planeG.addColorStop(1, `rgba(${fogColor[0]},${fogColor[1]},${fogColor[2]},${fp.alpha})`);
+    ctx.fillStyle = planeG;
+    ctx.fillRect(cam.x, cam.y, currentWW, currentWH);
+  }
+
+  // Strong far-distance fog wall at back of scene (z > 0.85)
+  const backFogG = ctx.createLinearGradient(0, cam.y, 0, cam.y + VH * 0.6);
+  backFogG.addColorStop(0, `rgba(${fogColor[0]},${fogColor[1]},${fogColor[2]},0.22)`);
+  backFogG.addColorStop(1, `rgba(${fogColor[0]},${fogColor[1]},${fogColor[2]},0)`);
+  ctx.fillStyle = backFogG;
+  ctx.fillRect(cam.x, cam.y, currentWW, currentWH * 0.6);
+
   ctx.restore();
 }
 
@@ -451,22 +631,86 @@ function shadeColor(hex, mult) {
   return `rgb(${Math.round(r*mult)},${Math.round(g*mult)},${Math.round(b*mult)})`;
 }
 
+// ── Depth of Field helpers ──
+// z: 0 = nearest foreground, 1 = farthest background
+// Returns a scale multiplier: near objects are larger, far are smaller
+function depthScale(z) {
+  // Near (z=0): scale ~1.35, Far (z=1): scale ~0.45
+  return 1.35 - z * 0.9;
+}
+
+// Returns how much blue-haze opacity to overlay (atmospheric perspective)
+function depthHazeAlpha(z) {
+  // Starts at z=0.2, maxes at z=1.0
+  return Math.max(0, (z - 0.15) * 0.72);
+}
+
+// Returns motion parallax factor: near objects move at full speed, far slower
+function depthParallax(z) {
+  return 1.0 - z * 0.55;
+}
+
+// Returns blur radius approximation (we use shadowBlur as soft-focus proxy)
+function depthBlur(z) {
+  // Only blurs beyond z=0.5
+  return Math.max(0, (z - 0.4) * 14);
+}
+
+// Apply depth-of-field overlay on top of a drawn object.
+// Call AFTER drawing the object, ctx already saved/translated to object center.
+// w, h are the half-extents of the object's bounding box in local coords.
+function applyDepthHaze(z, w, h) {
+  const alpha = depthHazeAlpha(z);
+  if (alpha <= 0.01) return;
+  // Blue-cyan water-haze tint
+  const hazeColor = GS.zone === 2
+    ? `rgba(2,8,20,${alpha})`          // deep: near-black
+    : GS.zone === 1
+      ? `rgba(5,40,80,${alpha})`        // coral: dark blue
+      : `rgba(8,60,120,${alpha})`;      // shallow: ocean blue
+  ctx.fillStyle = hazeColor;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, w * 1.1, h * 1.1, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 function drawDecorations() {
-  // 先画阴影
-  for (const d of decorations) {
+  // Sort by z descending so far objects draw first (painter's algorithm)
+  const sorted = [...decorations].sort((a, b) => (b.z ?? 0.5) - (a.z ?? 0.5));
+
+  // 先画阴影 (only for near/mid objects)
+  for (const d of sorted) {
+    const dz = d.z ?? 0.5;
+    if (dz > 0.7) continue; // far objects have no readable shadow
     if (d.type === 'rock' || d.type === 'castle' || d.type === 'shipwreck') {
+      const ds = depthScale(dz);
       ctx.save();
-      ctx.fillStyle = 'rgba(0,0,0,0.2)';
-      const sw = d.type === 'castle' ? 120 : d.type === 'shipwreck' ? 180 : d.size * 1.1;
-      const sh = d.type === 'castle' ? 16 : d.type === 'shipwreck' ? 20 : d.size * 0.35;
+      ctx.fillStyle = `rgba(0,0,0,${0.2 * (1 - dz * 0.5)})`;
+      const sw = (d.type === 'castle' ? 120 : d.type === 'shipwreck' ? 180 : d.size * 1.1) * ds;
+      const sh = (d.type === 'castle' ? 16 : d.type === 'shipwreck' ? 20 : d.size * 0.35) * ds;
       ctx.beginPath();
-      ctx.ellipse((d.x || 0) + 8, (d.y || H) + 6, sw, sh, 0, 0, Math.PI * 2);
+      ctx.ellipse((d.x || 0) + 8 * ds, (d.y || H) + 6 * ds, sw, sh, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
   }
 
-  for (const d of decorations) {
+  for (const d of sorted) {
+    const dz = d.z ?? 0.5;
+    const ds = depthScale(dz);
+    const dBlur = depthBlur(dz);
+
+    ctx.save();
+    // Apply depth scale from the decoration's anchor point
+    ctx.translate(d.x || 0, d.y || 0);
+    ctx.scale(ds, ds);
+    ctx.translate(-(d.x || 0), -(d.y || 0));
+
+    if (dBlur > 0) {
+      ctx.shadowColor = GS.zone === 2 ? 'rgba(3,10,25,0.5)' : 'rgba(8,45,100,0.4)';
+      ctx.shadowBlur = dBlur;
+    }
+
     if (d.type === 'seaweed') {
       const sway = Math.sin(GS.time * 1.5 + d.phase) * 14;
       ctx.strokeStyle = 'rgba(0,0,0,0.15)';
@@ -507,6 +751,18 @@ function drawDecorations() {
         ctx.fill();
         ctx.restore();
       }
+      // Depth haze on seaweed
+      ctx.shadowBlur = 0;
+      const hazeA = depthHazeAlpha(dz);
+      if (hazeA > 0.01) {
+        const hc = GS.zone === 2 ? `rgba(2,8,20,${hazeA * 0.7})` : `rgba(8,60,120,${hazeA * 0.7})`;
+        ctx.strokeStyle = hc;
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(d.x, d.y);
+        ctx.bezierCurveTo(d.x + sway * 0.5, d.y - d.height * 0.35, d.x + sway, d.y - d.height * 0.65, d.x + sway * 1.4, d.y - d.height);
+        ctx.stroke();
+      }
 
     } else if (d.type === 'coral') {
       const branches = [
@@ -536,8 +792,9 @@ function drawDecorations() {
         ctx.arc(bx - b.r * 0.3, by - b.h - b.r * 0.3, b.r * 0.25, 0, Math.PI * 2);
         ctx.fill();
       }
-
-    } else if (d.type === 'rock') {
+      // Depth haze on coral
+      ctx.shadowBlur = 0;
+      applyDepthHaze(dz, d.size * 1.2, d.size * 1.4);
       const rockG = ctx.createRadialGradient(d.x + d.size * 0.3, d.y + d.size * 0.1, 0, d.x, d.y - d.size * 0.2, d.size * 1.2);
       rockG.addColorStop(0, '#667788');
       rockG.addColorStop(0.5, d.color);
@@ -554,8 +811,12 @@ function drawDecorations() {
       ctx.beginPath();
       ctx.ellipse(d.x - d.size * 0.15, d.y - d.size * 0.28, d.size * 0.2, d.size * 0.1, -0.3, 0, Math.PI * 2);
       ctx.fill();
-
-    } else if (d.type === 'starfish') {
+      // Depth haze on rock
+      ctx.shadowBlur = 0;
+      ctx.save();
+      ctx.translate(d.x, d.y - d.size * 0.2);
+      applyDepthHaze(dz, d.size * 1.1, d.size * 0.75);
+      ctx.restore();
       ctx.save();
       ctx.translate(d.x, d.y);
       ctx.rotate(d.angle + GS.time * 0.05);
@@ -610,16 +871,38 @@ function drawDecorations() {
 
     } else if (d.type === 'castle') {
       drawCastle(d.x, d.y);
+      // Depth haze over castle
+      ctx.shadowBlur = 0;
+      const castleHaze = depthHazeAlpha(dz);
+      if (castleHaze > 0.01) {
+        const hc = GS.zone === 2 ? `rgba(2,8,20,${castleHaze})` : `rgba(8,55,115,${castleHaze})`;
+        ctx.fillStyle = hc;
+        ctx.beginPath();
+        ctx.ellipse(d.x, d.y - 90, 80, 110, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
     } else if (d.type === 'shipwreck') {
       drawShipwreck(d.x, d.y);
+      ctx.shadowBlur = 0;
+      const wreckHaze = depthHazeAlpha(dz);
+      if (wreckHaze > 0.01) {
+        const hc = GS.zone === 2 ? `rgba(2,8,20,${wreckHaze})` : `rgba(8,55,115,${wreckHaze})`;
+        ctx.fillStyle = hc;
+        ctx.beginPath();
+        ctx.ellipse(d.x, d.y - 35, 120, 55, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
     } else if (d.type === 'vent') {
       // 海底气泡柱
       if (Math.random() < 0.15) {
-        bubbles.push({ x: d.x + (Math.random() - 0.5) * 10, y: d.y - 10, r: 2 + Math.random() * 3, vy: -(0.4 + Math.random() * 0.8), life: 0.9, dx: (Math.random() - 0.5) * 0.3 });
+        bubbles.push({ x: d.x + (Math.random() - 0.5) * 10, y: d.y - 10, r: 2 + Math.random() * 3, vy: -(0.4 + Math.random() * 0.8), life: 0.9, dx: (Math.random() - 0.5) * 0.3, z: dz });
       }
     }
+
+    // Close the per-decoration ctx.save
+    ctx.restore();
   }
 }
 
@@ -837,19 +1120,31 @@ function drawShipwreck(x, y) {
 }
 
 function drawFish(f) {
-  // 地面阴影
+  const fz = f.z ?? 0.5;
+  const fScale = depthScale(fz);
+  const fBlur  = depthBlur(fz);
+
+  // 地面阴影 — scale shadow with depth
   if (f.y > 400) {
-    const shadowAlpha = Math.max(0, (f.y - 400) / 200) * 0.35;
+    const shadowAlpha = Math.max(0, (f.y - 400) / 200) * 0.35 * (1 - fz * 0.6);
     ctx.save();
     ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
     ctx.beginPath();
-    ctx.ellipse(f.x, 572 + Math.sin(f.x * 0.04 + GS.time * 0.15) * 6, f.size * 1.1, f.size * 0.22, 0, 0, Math.PI * 2);
+    ctx.ellipse(f.x, 572 + Math.sin(f.x * 0.04 + GS.time * 0.15) * 6, f.size * fScale * 1.1, f.size * fScale * 0.22, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
 
   ctx.save();
   ctx.translate(f.x, f.y);
+
+  // Apply depth scale + soft-focus (shadowBlur as DOF proxy)
+  ctx.scale(fScale, fScale);
+  if (fBlur > 0) {
+    ctx.shadowColor = GS.zone === 2 ? 'rgba(5,15,30,0.55)' : 'rgba(10,50,120,0.45)';
+    ctx.shadowBlur = fBlur;
+  }
+
   const scaleX = f.vx < 0 ? -1 : 1;
   ctx.scale(scaleX, 1);
 
@@ -1245,107 +1540,181 @@ function drawFish(f) {
     ctx.fill();
     ctx.restore();
     const fishG = ctx.createRadialGradient(-w * 0.25, -h * 0.4, h * 0.05, 0, 0, w * 1.05);
-    fishG.addColorStop(0, shadeColor(f.bodyColor, 1.6));
-    fishG.addColorStop(0.4, f.bodyColor);
-    fishG.addColorStop(1, shadeColor(f.bodyColor, 0.5));
+    fishG.addColorStop(0, shadeColor(f.bodyColor, 1.7));
+    fishG.addColorStop(0.35, shadeColor(f.bodyColor, 1.15));
+    fishG.addColorStop(0.65, f.bodyColor);
+    fishG.addColorStop(1, shadeColor(f.bodyColor, 0.45));
     ctx.fillStyle = fishG;
     ctx.beginPath();
     ctx.ellipse(0, 0, w, h, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // 鱼鳞光泽纹
+    // 鱼鳞 — realistic arc-row pattern
     ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(0, 0, w, h, 0, 0, Math.PI * 2);
     ctx.clip();
-    ctx.globalAlpha = 0.12;
-    for (let sx = -w + 5; sx < w; sx += 7) {
-      for (let sy = -h + 3; sy < h; sy += 6) {
-        ctx.fillStyle = (Math.floor(sx / 7 + sy / 6) % 2 === 0) ? '#fff' : shadeColor(f.bodyColor, 0.7);
+    const scaleRows = 4;
+    const scaleCols = 6;
+    for (let row = 0; row < scaleRows; row++) {
+      for (let col = 0; col < scaleCols; col++) {
+        const sx = -w * 0.7 + col * (w * 1.4 / scaleCols) + (row % 2) * (w * 0.7 / scaleCols);
+        const sy = -h * 0.65 + row * (h * 1.3 / scaleRows);
+        const sr = w * 0.22;
+        ctx.globalAlpha = 0.09;
+        ctx.strokeStyle = 'rgba(255,255,255,1)';
+        ctx.lineWidth = 0.8;
         ctx.beginPath();
-        ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+        ctx.arc(sx, sy, sr, Math.PI * 0.1, Math.PI * 0.9);
+        ctx.stroke();
+        // Scale shimmer spot
+        ctx.globalAlpha = 0.06;
+        const scG = ctx.createRadialGradient(sx - sr * 0.2, sy - sr * 0.2, 0, sx, sy, sr);
+        scG.addColorStop(0, 'rgba(255,255,255,0.8)');
+        scG.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = scG;
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
         ctx.fill();
       }
     }
     ctx.globalAlpha = 1;
     ctx.restore();
 
-    // 腹部
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    // 腹部 — subsurface scattering glow
+    const bellyG = ctx.createRadialGradient(w * 0.12, h * 0.22, 0, w * 0.12, h * 0.3, w * 0.55);
+    bellyG.addColorStop(0, 'rgba(255,255,255,0.32)');
+    bellyG.addColorStop(0.5, 'rgba(255,255,255,0.12)');
+    bellyG.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = bellyG;
     ctx.beginPath();
     ctx.ellipse(w * 0.1, h * 0.28, w * 0.45, h * 0.3, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // 背鳍
-    const finG = ctx.createLinearGradient(0, -h, 14, -h - 12);
-    finG.addColorStop(0, shadeColor(f.color, 0.9));
-    finG.addColorStop(1, shadeColor(f.color, 1.3));
+    // 背鳍 — translucent with fin-ray lines
+    const finAngle = Math.sin(GS.time * 2.5 + f.phase) * 0.06;
+    ctx.save();
+    ctx.rotate(finAngle);
+    const finG = ctx.createLinearGradient(0, -h, 18, -h - 16);
+    finG.addColorStop(0, shadeColor(f.color, 0.8) + 'cc');
+    finG.addColorStop(1, shadeColor(f.color, 1.4) + '55');
     ctx.fillStyle = finG;
     ctx.beginPath();
-    ctx.moveTo(-2, -h + 1);
-    ctx.lineTo(7, -h - 11);
-    ctx.lineTo(15, -h + 1);
+    ctx.moveTo(-3, -h + 2);
+    ctx.lineTo(8, -h - 13);
+    ctx.lineTo(18, -h + 2);
     ctx.closePath();
     ctx.fill();
-
-    // 尾鳍
-    ctx.fillStyle = shadeColor(f.color, 1.1);
-    ctx.beginPath();
-    ctx.moveTo(-w + 1, 0);
-    ctx.lineTo(-w - 11, -9);
-    ctx.lineTo(-w - 11, 9);
-    ctx.closePath();
-    ctx.fill();
-
-    // 眼睛
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(w * 0.5, -2, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#111';
-    ctx.beginPath();
-    ctx.arc(w * 0.5 + 0.5, -2, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.beginPath();
-    ctx.arc(w * 0.5 + 1, -3.5, 1.3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 小丑鱼白条纹
-    if (f.type === 'clownfish') {
-      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-      ctx.lineWidth = 2.5;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(0, -h + 1); ctx.lineTo(0, h - 1);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(-w * 0.3, -h * 0.8); ctx.lineTo(-w * 0.3, h * 0.8);
-      ctx.stroke();
+    // Fin rays
+    ctx.strokeStyle = shadeColor(f.color, 1.2) + '88';
+    ctx.lineWidth = 0.8;
+    for (let r = 0; r < 3; r++) {
+      const rx2 = -3 + r * 7;
+      ctx.beginPath(); ctx.moveTo(rx2, -h + 2); ctx.lineTo(8 + (r - 1) * 3, -h - 11); ctx.stroke();
     }
+    ctx.restore();
 
-    // 河豚棘刺
-    if (f.type === 'puffer') {
-      ctx.strokeStyle = shadeColor(f.color, 0.7);
-      ctx.lineWidth = 1.8;
-      for (let a = 0; a < Math.PI * 2; a += 0.65) {
-        const sx = Math.cos(a) * w, sy = Math.sin(a) * h;
-        ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(Math.cos(a) * (w + 6), Math.sin(a) * (h + 6));
-        ctx.stroke();
+    // 尾鳍 — forked, translucent
+    const tailFlap = Math.sin(GS.time * 3 + f.phase) * 0.08;
+    ctx.save();
+    ctx.rotate(tailFlap);
+    const tailG = ctx.createLinearGradient(-w, 0, -w - 14, 0);
+    tailG.addColorStop(0, shadeColor(f.color, 0.9) + 'dd');
+    tailG.addColorStop(1, shadeColor(f.color, 1.2) + '44');
+    ctx.fillStyle = tailG;
+    // Upper lobe
+    ctx.beginPath();
+    ctx.moveTo(-w + 2, -1);
+    ctx.lineTo(-w - 13, -h * 0.65);
+    ctx.lineTo(-w - 5, -1);
+    ctx.closePath();
+    ctx.fill();
+    // Lower lobe
+    ctx.beginPath();
+    ctx.moveTo(-w + 2, 1);
+    ctx.lineTo(-w - 13, h * 0.65);
+    ctx.lineTo(-w - 5, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // 眼睛 — realistic layered
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.arc(w * 0.5 + 1, -1.5, 5.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(w * 0.5, -2, 5, 0, Math.PI * 2); ctx.fill();
+    // Iris gradient
+    const irisG = ctx.createRadialGradient(w * 0.5, -2, 0, w * 0.5, -2, 3.5);
+    irisG.addColorStop(0, '#111');
+    irisG.addColorStop(0.6, '#222');
+    irisG.addColorStop(1, '#333');
+    ctx.fillStyle = irisG;
+    ctx.beginPath(); ctx.arc(w * 0.5, -2, 3.5, 0, Math.PI * 2); ctx.fill();
+    // Pupil
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(w * 0.5 + 0.3, -2, 2, 0, Math.PI * 2); ctx.fill();
+    // Primary specular
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.beginPath(); ctx.arc(w * 0.5 + 1.2, -3.5, 1.4, 0, Math.PI * 2); ctx.fill();
+    // Secondary micro-highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath(); ctx.arc(w * 0.5 - 1, -1, 0.7, 0, Math.PI * 2); ctx.fill();
+
+    // 小丑鱼白条纹 — with subtle blue border for realism
+    if (f.type === 'clownfish') {
+      // Blue-edged white bars
+      for (let bar = 0; bar < 2; bar++) {
+        const bx3 = bar === 0 ? 0 : -w * 0.3;
+        ctx.strokeStyle = 'rgba(50,100,180,0.6)';
+        ctx.lineWidth = 4.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(bx3, -h + 1); ctx.lineTo(bx3, h - 1); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,0.88)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(bx3, -h + 1); ctx.lineTo(bx3, h - 1); ctx.stroke();
       }
     }
 
-    // 三文鱼侧线
+    // 河豚棘刺 — tapered spines
+    if (f.type === 'puffer') {
+      for (let a = 0; a < Math.PI * 2; a += 0.55) {
+        const spineLen = 7 + Math.sin(a * 3) * 2;
+        const sx2 = Math.cos(a) * w, sy2 = Math.sin(a) * h;
+        const ex2 = Math.cos(a) * (w + spineLen), ey2 = Math.sin(a) * (h + spineLen);
+        const spG = ctx.createLinearGradient(sx2, sy2, ex2, ey2);
+        spG.addColorStop(0, shadeColor(f.color, 0.75));
+        spG.addColorStop(1, shadeColor(f.color, 1.1) + '44');
+        ctx.strokeStyle = spG;
+        ctx.lineWidth = 1.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(sx2, sy2); ctx.lineTo(ex2, ey2); ctx.stroke();
+      }
+    }
+
+    // 三文鱼侧线 + 粉红色调斑块
     if (f.type === 'salmon') {
-      ctx.strokeStyle = 'rgba(255,130,80,0.7)';
-      ctx.lineWidth = 2.5;
+      // Pink lateral blush
+      const blushG = ctx.createLinearGradient(-w * 0.2, 0, w * 0.4, 0);
+      blushG.addColorStop(0, 'rgba(255,100,60,0)');
+      blushG.addColorStop(0.4, 'rgba(255,110,70,0.18)');
+      blushG.addColorStop(1, 'rgba(255,100,60,0)');
+      ctx.fillStyle = blushG;
+      ctx.beginPath(); ctx.ellipse(w * 0.1, 0, w * 0.65, h * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+      // Lateral line
+      ctx.strokeStyle = 'rgba(255,140,90,0.65)';
+      ctx.lineWidth = 2;
       ctx.lineCap = 'round';
       ctx.beginPath();
       ctx.moveTo(-w * 0.55, 0);
-      ctx.quadraticCurveTo(0, h * 0.15, w * 0.55, 0);
+      ctx.quadraticCurveTo(0, h * 0.12, w * 0.55, 0);
       ctx.stroke();
     }
   }
+
+  // Depth haze overlay — tint with water color based on z depth
+  ctx.shadowBlur = 0;
+  applyDepthHaze(fz, w * 1.2, h * 1.6);
+
   ctx.restore();
 
   // 多击进度指示
@@ -2299,187 +2668,375 @@ function drawFloatingTexts() {
 function drawTitle() {
   const t = GS.time;
 
-  // Sky gradient — deep ocean at bottom, surface at top
+  // ── Background: sky → ocean surface → underwater ──
   const skyG = ctx.createLinearGradient(0, 0, 0, VH);
-  skyG.addColorStop(0,   '#87ceeb');
-  skyG.addColorStop(0.38,'#3a9fd8');
-  skyG.addColorStop(0.42,'#1a6fa8');
-  skyG.addColorStop(1,   '#051828');
+  skyG.addColorStop(0,    '#4a90c8');
+  skyG.addColorStop(0.28, '#2878b0');
+  skyG.addColorStop(0.36, '#1860a0');
+  skyG.addColorStop(0.40, '#0e5090');
+  skyG.addColorStop(0.46, '#0a4080');
+  skyG.addColorStop(0.60, '#083570');
+  skyG.addColorStop(0.80, '#051e4a');
+  skyG.addColorStop(1,    '#020a1e');
   ctx.fillStyle = skyG;
   ctx.fillRect(0, 0, VW, VH);
 
-  // Pixel sun
-  const sunX = VW * 0.78, sunY = VH * 0.13;
-  ctx.fillStyle = '#ffe87a';
-  ctx.fillRect(sunX - 20, sunY - 20, 40, 40);
-  ctx.fillStyle = '#ffcc00';
-  ctx.fillRect(sunX - 14, sunY - 14, 28, 28);
-  // Sun rays (pixel style)
-  ctx.fillStyle = '#ffe87a';
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2 + t * 0.3;
-    const rx = sunX + Math.cos(a) * 34, ry = sunY + Math.sin(a) * 34;
-    ctx.fillRect(rx - 3, ry - 3, 6, 6);
-  }
+  const waveY = VH * 0.40;
 
-  // Pixel clouds
-  const cloudOffsets = [0, VW * 0.35, VW * 0.65];
-  for (const ox of cloudOffsets) {
-    const cx = ((ox + t * 18) % (VW + 120)) - 60;
-    const cy = VH * 0.08 + Math.sin(t * 0.2 + ox) * 8;
-    ctx.fillStyle = '#ffffff';
-    for (const [dx, dy, w, h] of [[-20,8,40,16],[0,0,50,20],[20,6,36,16],[-10,16,60,12]]) {
-      ctx.fillRect(cx + dx, cy + dy, w, h);
+  // ── Sky atmosphere: sun glow ──
+  const sunX = VW * 0.75, sunY = VH * 0.10;
+  const sunGlow = ctx.createRadialGradient(sunX, sunY, 5, sunX, sunY, VH * 0.45);
+  sunGlow.addColorStop(0,   'rgba(255,255,210,0.55)');
+  sunGlow.addColorStop(0.08,'rgba(255,230,160,0.30)');
+  sunGlow.addColorStop(0.25,'rgba(255,200,100,0.10)');
+  sunGlow.addColorStop(1,   'rgba(255,180,80,0)');
+  ctx.fillStyle = sunGlow;
+  ctx.fillRect(0, 0, VW, VH);
+
+  // Sun disc
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,240,180,0.8)';
+  ctx.shadowBlur = 40;
+  const sunDiscG = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 22);
+  sunDiscG.addColorStop(0,   '#fffae0');
+  sunDiscG.addColorStop(0.5, '#ffe870');
+  sunDiscG.addColorStop(1,   'rgba(255,200,60,0)');
+  ctx.fillStyle = sunDiscG;
+  ctx.beginPath();
+  ctx.arc(sunX, sunY, 22, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // ── Realistic clouds ──
+  const cloudDefs = [
+    { ox: 0,        oy: VH * 0.06, sc: 1.0 },
+    { ox: VW * 0.38,oy: VH * 0.11, sc: 0.75 },
+    { ox: VW * 0.65,oy: VH * 0.04, sc: 1.2 },
+  ];
+  for (const cd of cloudDefs) {
+    const cx = ((cd.ox + t * 14) % (VW + 180)) - 90;
+    const cy = cd.oy + Math.sin(t * 0.18 + cd.ox) * 5;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(cd.sc, cd.sc);
+    const blobs = [[0,10,38,22],[25,-4,48,26],[55,6,36,22],[-18,14,32,18],[68,12,30,18]];
+    for (const [bx, by, bw, bh] of blobs) {
+      const cg = ctx.createRadialGradient(bx, by - bh * 0.2, 2, bx, by, Math.max(bw, bh) * 0.6);
+      cg.addColorStop(0,   'rgba(255,255,255,0.92)');
+      cg.addColorStop(0.5, 'rgba(240,248,255,0.75)');
+      cg.addColorStop(1,   'rgba(200,230,255,0)');
+      ctx.fillStyle = cg;
+      ctx.beginPath();
+      ctx.ellipse(bx, by, bw, bh, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
+    ctx.restore();
   }
 
-  // Ocean surface wave (pixel blocks)
-  const waveY = VH * 0.42;
-  ctx.fillStyle = '#2a9cc8';
+  // ── Ocean surface: layered waves ──
+  // Deep ocean fill below wave line
+  ctx.fillStyle = '#0a5a8a';
   ctx.fillRect(0, waveY, VW, VH - waveY);
-  ctx.fillStyle = '#1a7aa8';
-  for (let x = 0; x < VW; x += 16) {
-    const h = 8 + Math.sin(x * 0.05 + t * 2) * 6;
-    ctx.fillRect(x, waveY - h, 16, h + 4);
-  }
-  // Wave shimmer
-  ctx.fillStyle = 'rgba(255,255,255,0.25)';
-  for (let x = 0; x < VW; x += 32) {
-    const wx = (x + t * 40) % VW;
-    ctx.fillRect(wx, waveY - 4, 16, 4);
-  }
 
-  // Pixel underwater bubbles
-  ctx.fillStyle = 'rgba(180,230,255,0.5)';
-  for (let i = 0; i < 12; i++) {
-    const bx = (i * 137 + 50) % VW;
-    const by = waveY + 40 + ((i * 89 + t * 30 * (1 + i % 3)) % (VH - waveY - 40));
-    const bs = 4 + (i % 3) * 4;
-    ctx.fillRect(bx, by, bs, bs);
-  }
-
-  // Pixel fish swimming in background
-  const fishColors = ['#ff6b35','#4a90d9','#e07b54','#a8c256','#dd88ff'];
-  for (let i = 0; i < 5; i++) {
-    const fx = ((i * 200 + t * (30 + i * 8)) % (VW + 80)) - 40;
-    const fy = waveY + 60 + i * 40 + Math.sin(t + i) * 15;
-    const fc = fishColors[i];
-    ctx.fillStyle = fc;
-    // Pixel fish body
-    ctx.fillRect(fx, fy - 6, 24, 12);
-    ctx.fillRect(fx + 4, fy - 10, 16, 20);
-    // Tail
-    ctx.fillRect(fx - 8, fy - 8, 8, 6);
-    ctx.fillRect(fx - 8, fy + 2, 8, 6);
-    // Eye
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(fx + 18, fy - 4, 4, 4);
-    ctx.fillStyle = '#111';
-    ctx.fillRect(fx + 19, fy - 3, 2, 2);
-    ctx.fillStyle = fc;
-  }
-
-  // Pixel seaweed at bottom
-  for (let i = 0; i < 8; i++) {
-    const sx = VW * 0.05 + i * (VW * 0.13);
-    const sh = 40 + (i % 3) * 20;
-    const sway = Math.sin(t * 1.2 + i) * 6;
-    ctx.fillStyle = i % 2 === 0 ? '#2d8a4a' : '#50c870';
-    for (let seg = 0; seg < sh / 8; seg++) {
-      ctx.fillRect(sx + sway * (seg / (sh / 8)) - 4, VH - sh + seg * 8, 8, 8);
+  // Wave layers
+  const waveLayers = [
+    { speed: 1.2, amp: 7,  col: '#1278a8', offset: 0 },
+    { speed: 0.9, amp: 5,  col: '#0d6898', offset: 1.5 },
+    { speed: 1.5, amp: 4,  col: '#0a5580', offset: 3.0 },
+  ];
+  for (const wl of waveLayers) {
+    ctx.fillStyle = wl.col;
+    ctx.beginPath();
+    ctx.moveTo(0, waveY);
+    for (let x = 0; x <= VW; x += 8) {
+      const wy = waveY - wl.amp + Math.sin(x * 0.018 + t * wl.speed + wl.offset) * wl.amp
+               + Math.sin(x * 0.035 + t * wl.speed * 0.7 + wl.offset) * wl.amp * 0.4;
+      ctx.lineTo(x, wy);
     }
+    ctx.lineTo(VW, VH); ctx.lineTo(0, VH);
+    ctx.closePath();
+    ctx.fill();
   }
 
-  // ── TITLE TEXT (pixel style) ──
-  const titleY = VH * 0.2;
+  // Wave foam / specular sparkles on surface
+  ctx.save();
+  for (let i = 0; i < 18; i++) {
+    const wx2 = ((i * 113.7 + t * 50) % (VW + 60)) - 30;
+    const wy2 = waveY - 2 + Math.sin(wx2 * 0.02 + t * 1.2) * 6;
+    const wr = 1.5 + (i % 3) * 1.2;
+    const wg = ctx.createRadialGradient(wx2, wy2, 0, wx2, wy2, wr * 3);
+    wg.addColorStop(0, 'rgba(255,255,255,0.9)');
+    wg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = wg;
+    ctx.beginPath();
+    ctx.ellipse(wx2, wy2, wr * 3, wr, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 
-  // Shadow
-  ctx.fillStyle = 'rgba(0,30,80,0.7)';
-  ctx.font = 'bold 52px "Courier New", monospace';
+  // ── Underwater god rays from surface ──
+  ctx.save();
+  for (let i = 0; i < 8; i++) {
+    const rx = VW * (i / 8) + Math.sin(t * 0.4 + i * 1.4) * 30;
+    const spread = 55 + Math.sin(t * 0.3 + i) * 20;
+    const rayG = ctx.createLinearGradient(0, waveY, 0, VH);
+    const alpha = 0.04 + Math.sin(t * 0.5 + i) * 0.015;
+    rayG.addColorStop(0,   `rgba(180,235,255,${alpha * 1.8})`);
+    rayG.addColorStop(0.3, `rgba(120,200,250,${alpha})`);
+    rayG.addColorStop(1,   'rgba(40,100,180,0)');
+    ctx.fillStyle = rayG;
+    ctx.beginPath();
+    const tw = 5;
+    ctx.moveTo(rx - tw, waveY);
+    ctx.lineTo(rx + tw, waveY);
+    ctx.lineTo(rx + spread, VH);
+    ctx.lineTo(rx - spread * 0.7, VH);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // ── Caustic shimmer patches in water ──
+  ctx.save();
+  for (let i = 0; i < 20; i++) {
+    const cx2 = ((i * 89.3 + t * 22) % (VW + 60)) - 30;
+    const cy2 = waveY + 30 + (i % 5) * ((VH - waveY - 40) / 5) + Math.sin(t + i) * 15;
+    const cr = 10 + Math.sin(t * 1.2 + i) * 6;
+    const ca = (0.04 + Math.sin(t * 1.5 + i) * 0.02) * (1 - (cy2 - waveY) / (VH - waveY) * 1.5);
+    if (ca <= 0) continue;
+    const cg = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, cr);
+    cg.addColorStop(0, `rgba(200,245,255,${ca * 2})`);
+    cg.addColorStop(1, 'rgba(100,190,230,0)');
+    ctx.fillStyle = cg;
+    ctx.beginPath();
+    ctx.ellipse(cx2, cy2, cr, cr * 0.5, t * 0.3 + i * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // ── Floating bubbles ──
+  ctx.save();
+  for (let i = 0; i < 16; i++) {
+    const bx2 = (i * 137 + 50) % VW;
+    const by2 = waveY + 40 + ((i * 89 + t * 35 * (1 + i % 3)) % (VH - waveY - 50));
+    const br = 2 + (i % 4) * 1.5;
+    ctx.globalAlpha = 0.5 + Math.sin(t + i) * 0.2;
+    // Rim
+    ctx.strokeStyle = 'rgba(200,240,255,0.7)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.arc(bx2, by2, br, 0, Math.PI * 2); ctx.stroke();
+    // Highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.65)';
+    ctx.beginPath(); ctx.ellipse(bx2 - br * 0.3, by2 - br * 0.35, br * 0.28, br * 0.18, -0.4, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  // ── Silhouette fish in background ──
+  const titleFishData = [
+    { col: '#1a6090', size: 22, speed: 35 },
+    { col: '#134870', size: 16, speed: 28 },
+    { col: '#1a7898', size: 28, speed: 42 },
+    { col: '#0e3860', size: 14, speed: 20 },
+    { col: '#157090', size: 19, speed: 38 },
+  ];
+  for (let i = 0; i < titleFishData.length; i++) {
+    const fd = titleFishData[i];
+    const fx = ((i * 250 + t * fd.speed) % (VW + 120)) - 60;
+    const fy = waveY + 50 + i * ((VH - waveY - 80) / 5) + Math.sin(t * 0.8 + i) * 18;
+    ctx.save();
+    ctx.globalAlpha = 0.35 + i * 0.05;
+    ctx.fillStyle = fd.col;
+    const s = fd.size;
+    // Body
+    ctx.beginPath();
+    ctx.ellipse(fx, fy, s, s * 0.42, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Tail
+    ctx.beginPath();
+    ctx.moveTo(fx - s, fy);
+    ctx.lineTo(fx - s - s * 0.6, fy - s * 0.4);
+    ctx.lineTo(fx - s - s * 0.6, fy + s * 0.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // ── Seaweed silhouettes at bottom ──
+  for (let i = 0; i < 9; i++) {
+    const sx = VW * 0.04 + i * (VW * 0.12);
+    const sh = VH * 0.12 + (i % 3) * VH * 0.04;
+    const sway = Math.sin(t * 1.1 + i * 0.8) * 10;
+    const swG = ctx.createLinearGradient(sx, VH, sx + sway, VH - sh);
+    swG.addColorStop(0, '#0d5a2a');
+    swG.addColorStop(1, '#1a8040');
+    ctx.strokeStyle = swG;
+    ctx.lineWidth = 5 + (i % 3);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(sx, VH);
+    ctx.bezierCurveTo(sx + sway * 0.4, VH - sh * 0.35, sx + sway, VH - sh * 0.65, sx + sway * 1.3, VH - sh);
+    ctx.stroke();
+  }
+
+  // ── Marine snow particles ──
+  ctx.save();
+  for (let i = 0; i < 30; i++) {
+    const px = (i * 61.8 + t * 8) % VW;
+    const py = waveY + 20 + ((i * 113.7 + t * (5 + i % 4)) % (VH - waveY));
+    ctx.globalAlpha = 0.2 + Math.sin(t + i) * 0.1;
+    ctx.fillStyle = 'rgba(200,240,255,1)';
+    ctx.beginPath();
+    ctx.arc(px, py, 0.8 + (i % 3) * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  // ── TITLE TEXT — cinematic ocean style ──
+  const titleY = VH * 0.20;
   ctx.textAlign = 'center';
-  ctx.fillText('FISH FISH', VW / 2 + 4, titleY + 4);
-  ctx.fillText('WANNA FISH', VW / 2 + 4, titleY + 62);
 
-  // Outline
-  ctx.strokeStyle = '#003366';
-  ctx.lineWidth = 6;
-  ctx.strokeText('FISH FISH', VW / 2, titleY);
-  ctx.strokeText('WANNA FISH', VW / 2, titleY + 58);
-
-  // Main title — animated color cycle
-  const hue1 = (t * 40) % 360;
-  const hue2 = (t * 40 + 120) % 360;
-  ctx.fillStyle = `hsl(${hue1},100%,65%)`;
+  // Outer glow halo
+  ctx.save();
+  ctx.shadowColor = 'rgba(80,200,255,0.6)';
+  ctx.shadowBlur = 55;
+  ctx.fillStyle = 'rgba(80,200,255,0.12)';
+  ctx.font = 'bold 54px "Georgia", serif';
   ctx.fillText('FISH FISH', VW / 2, titleY);
-  ctx.fillStyle = `hsl(${hue2},100%,65%)`;
-  ctx.fillText('WANNA FISH', VW / 2, titleY + 58);
+  ctx.fillText('WANNA FISH', VW / 2, titleY + 62);
+  ctx.restore();
 
-  // Pixel decoration stars/sparkles around title
-  ctx.fillStyle = '#fff';
+  // Dark depth shadow
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,15,40,0.75)';
+  ctx.font = 'bold 54px "Georgia", serif';
+  ctx.fillText('FISH FISH', VW / 2 + 3, titleY + 4);
+  ctx.fillText('WANNA FISH', VW / 2 + 3, titleY + 66);
+  ctx.restore();
+
+  // Main title with ocean-shimmer gradient
+  ctx.save();
+  const titleGrad = ctx.createLinearGradient(VW * 0.2, titleY - 50, VW * 0.8, titleY + 70);
+  titleGrad.addColorStop(0,    '#c8f0ff');
+  titleGrad.addColorStop(0.25, '#80d8f8');
+  titleGrad.addColorStop(0.5,  `hsl(${190 + Math.sin(t * 0.8) * 20},90%,75%)`);
+  titleGrad.addColorStop(0.75, '#60c8f0');
+  titleGrad.addColorStop(1,    '#a0e8ff');
+  ctx.fillStyle = titleGrad;
+  ctx.font = 'bold 54px "Georgia", serif';
+  ctx.fillText('FISH FISH', VW / 2, titleY);
+  ctx.fillText('WANNA FISH', VW / 2, titleY + 62);
+  ctx.restore();
+
+  // Subtitle
+  ctx.save();
+  ctx.fillStyle = 'rgba(160,225,255,0.85)';
+  ctx.font = '16px "Georgia", serif';
+  ctx.fillText('深海捕鱼  ✦  寿司经营', VW / 2, titleY + 96);
+  ctx.restore();
+
+  // Shimmering water caustic overlay on title
+  ctx.save();
   for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2 + t;
-    const sr = VW * 0.28 + Math.sin(t * 2 + i) * 20;
-    const sx = VW / 2 + Math.cos(a) * sr;
-    const sy = titleY - 20 + Math.sin(a) * 30;
-    const ss = 3 + Math.sin(t * 3 + i) * 2;
-    ctx.fillRect(sx - ss / 2, sy - ss / 2, ss, ss);
+    const a = (i / 6) * Math.PI * 2 + t * 0.6;
+    const sr = VW * 0.25 + Math.sin(t * 1.5 + i) * 15;
+    const sx2 = VW / 2 + Math.cos(a) * sr;
+    const sy2 = titleY - 15 + Math.sin(a) * 22;
+    const sparkR = 2.5 + Math.sin(t * 3 + i) * 1.5;
+    ctx.globalAlpha = 0.5 + Math.sin(t * 2 + i) * 0.3;
+    const spG = ctx.createRadialGradient(sx2, sy2, 0, sx2, sy2, sparkR * 3);
+    spG.addColorStop(0,   'rgba(255,255,255,0.9)');
+    spG.addColorStop(0.4, 'rgba(180,240,255,0.5)');
+    spG.addColorStop(1,   'rgba(100,200,255,0)');
+    ctx.fillStyle = spG;
+    ctx.beginPath();
+    ctx.arc(sx2, sy2, sparkR * 3, 0, Math.PI * 2);
+    ctx.fill();
   }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
   ctx.textAlign = 'left';
 
-  // ── START BUTTON ──
-  const btnW = 190, btnH = 50, btnX = VW / 2 - btnW / 2, btnY = VH * 0.56;
+  // ── START BUTTON — ocean glass style ──
+  const btnW = 200, btnH = 52, btnX = VW / 2 - btnW / 2, btnY = VH * 0.56;
   const hovering = mouseScreen.x >= btnX && mouseScreen.x <= btnX + btnW &&
                    mouseScreen.y >= btnY && mouseScreen.y <= btnY + btnH;
 
-  // Press ripple — records time of last press for ink-spread animation
+  // Press ripple
   const pressAge = GS.time - (GS._btnPressT || -99);
   const rippleR = pressAge < 0.5 ? pressAge / 0.5 * (btnW * 0.9) : 0;
-  const rippleA = pressAge < 0.5 ? (1 - pressAge / 0.5) * 0.35 : 0;
+  const rippleA = pressAge < 0.5 ? (1 - pressAge / 0.5) * 0.3 : 0;
 
   ctx.save();
   ctx.translate(btnX, btnY);
 
-  // Ink-spread ripple (drawn behind button so clipped by save/restore)
+  // Outer glow
+  if (hovering) {
+    ctx.shadowColor = 'rgba(80,210,255,0.7)';
+    ctx.shadowBlur = 22;
+  }
+
+  // Glass body
+  const btnBodyG = ctx.createLinearGradient(0, 0, 0, btnH);
+  if (hovering) {
+    btnBodyG.addColorStop(0, 'rgba(20,140,200,0.90)');
+    btnBodyG.addColorStop(0.5, 'rgba(10,100,170,0.85)');
+    btnBodyG.addColorStop(1, 'rgba(5,70,130,0.90)');
+  } else {
+    btnBodyG.addColorStop(0, 'rgba(10,100,180,0.80)');
+    btnBodyG.addColorStop(0.5, 'rgba(5,70,150,0.75)');
+    btnBodyG.addColorStop(1, 'rgba(3,45,110,0.80)');
+  }
+  ctx.fillStyle = btnBodyG;
+  ctx.beginPath();
+  ctx.roundRect(0, 0, btnW, btnH, 10);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Ripple
   if (rippleR > 0) {
     ctx.save();
-    ctx.beginPath(); ctx.rect(0, 0, btnW, btnH);
-    ctx.clip();
+    ctx.beginPath(); ctx.roundRect(0, 0, btnW, btnH, 10); ctx.clip();
     ctx.fillStyle = `rgba(255,255,255,${rippleA})`;
     ctx.beginPath(); ctx.arc(btnW / 2, btnH / 2, rippleR, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 
-  // Button body — flat with hand-drawn border feel
-  ctx.fillStyle = hovering ? '#e03030' : '#c82020';
-  ctx.fillRect(0, 0, btnW, btnH);
+  // Glass top sheen
+  const sheenG = ctx.createLinearGradient(0, 0, 0, btnH * 0.5);
+  sheenG.addColorStop(0, 'rgba(255,255,255,0.28)');
+  sheenG.addColorStop(1, 'rgba(255,255,255,0.04)');
+  ctx.fillStyle = sheenG;
+  ctx.beginPath();
+  ctx.roundRect(2, 2, btnW - 4, btnH * 0.45, [8, 8, 0, 0]);
+  ctx.fill();
 
-  // Pixel-art style border: 4 separate edge rects (no corner overlap = hand-drawn feel)
-  const bc = hovering ? 'rgba(255,210,210,0.9)' : 'rgba(255,160,160,0.5)';
-  ctx.fillStyle = bc;
-  ctx.fillRect(0, 0, btnW, 2);          // top
-  ctx.fillRect(0, btnH - 2, btnW, 2);   // bottom
-  ctx.fillRect(0, 2, 2, btnH - 4);      // left
-  ctx.fillRect(btnW - 2, 2, 2, btnH - 4); // right
+  // Border
+  ctx.strokeStyle = hovering ? 'rgba(140,225,255,0.9)' : 'rgba(100,190,240,0.6)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(0, 0, btnW, btnH, 10);
+  ctx.stroke();
 
-  // Inner shadow (depth without glow)
-  ctx.fillStyle = 'rgba(0,0,0,0.18)';
-  ctx.fillRect(2, btnH - 8, btnW - 4, 6);
-
-  // Text — no triangle, just plain characters
-  ctx.fillStyle = '#fff';
-  ctx.font = hovering ? 'bold 19px "Courier New", monospace' : 'bold 18px "Courier New", monospace';
+  // Text
+  ctx.fillStyle = '#e8f8ff';
+  ctx.font = hovering ? 'bold 20px "Georgia", serif' : 'bold 18px "Georgia", serif';
   ctx.textAlign = 'center';
-  ctx.fillText('开始游戏', btnW / 2, btnH / 2 + 7);
+  ctx.fillText('🤿  开始游戏', btnW / 2, btnH / 2 + 7);
   ctx.textAlign = 'left';
 
   ctx.restore();
 
-  // KEY HINT — pixel style, below button
-  ctx.fillStyle = hovering ? 'rgba(255,200,200,0.7)' : 'rgba(200,220,255,0.45)';
-  ctx.font = '12px "Courier New", monospace';
+  // KEY HINT — below button
+  ctx.fillStyle = 'rgba(160,220,255,0.55)';
+  ctx.font = '12px "Georgia", serif';
   ctx.textAlign = 'center';
-  ctx.fillText('[ CLICK  /  TAP  /  SPACE  /  ENTER ]', VW / 2, btnY + btnH + 22);
-  ctx.fillText('滑动探索海洋  触屏点击捕鱼  上岸经营寿司店', VW / 2, btnY + btnH + 40);
+  ctx.fillText('CLICK  /  TAP  /  SPACE  /  ENTER', VW / 2, btnY + btnH + 24);
+  ctx.fillStyle = 'rgba(120,190,230,0.45)';
+  ctx.font = '11px "Georgia", serif';
+  ctx.fillText('滑动探索海洋  触屏点击捕鱼  上岸经营寿司店', VW / 2, btnY + btnH + 42);
   ctx.textAlign = 'left';
 
   // Store button bounds for click detection
@@ -2774,7 +3331,7 @@ canvas.addEventListener('click', e => {
 });
 
 // Touch: drag = pan camera; tap (no drag) = interact
-const DRAG_THRESHOLD = 12; // pixels before touch is classified as drag
+const DRAG_THRESHOLD = 8; // lower threshold = more responsive drag
 
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
@@ -2789,6 +3346,11 @@ canvas.addEventListener('touchstart', e => {
       GS._btnPressT = GS.time;
     }
   }
+  // Restaurant: record touch-start for drag-to-serve
+  if (GS.scene === 'restaurant') {
+    const rect = canvas.getBoundingClientRect();
+    restaurantTouchStart = { x: t.clientX - rect.left, y: t.clientY - rect.top };
+  }
 }, { passive: false });
 
 canvas.addEventListener('touchmove', e => {
@@ -2801,11 +3363,20 @@ canvas.addEventListener('touchmove', e => {
     touchIsDrag = true;
   }
   if (touchIsDrag && GS.scene === 'fishing') {
-    // Direct delta pan — move world opposite to finger drag
-    cam.x = Math.max(0, Math.min(Math.max(0, currentWW - VW), cam.x - dx));
-    cam.y = Math.max(0, Math.min(Math.max(0, currentWH - VH), cam.y - dy));
+    // Pan camera: clamp to valid world range
+    const maxCamX = Math.max(0, currentWW - VW);
+    const maxCamY = Math.max(0, currentWH - VH);
+    cam.x = Math.min(maxCamX, Math.max(0, cam.x - dx));
+    cam.y = Math.min(maxCamY, Math.max(0, cam.y - dy));
     camTarget.x = cam.x;
     camTarget.y = cam.y;
+  }
+  // Restaurant drag-to-serve: track current finger position
+  if (GS.scene === 'restaurant' && GS.preparingDish) {
+    const rect = canvas.getBoundingClientRect();
+    mouseScreen.x = t.clientX - rect.left;
+    mouseScreen.y = t.clientY - rect.top;
+    touchIsDrag = true;
   }
   touchStartPos = { x: t.clientX, y: t.clientY };
 }, { passive: false });
@@ -2813,10 +3384,25 @@ canvas.addEventListener('touchmove', e => {
 canvas.addEventListener('touchend', e => {
   e.preventDefault();
   touchActive = false;
-  if (touchIsDrag) { touchStartPos = null; touchIsDrag = false; return; }
-  // Treat as tap
   const t = e.changedTouches[0];
   const rect = canvas.getBoundingClientRect();
+
+  if (GS.scene === 'restaurant') {
+    // If we were dragging a dish, try to serve at release position
+    if (touchIsDrag && GS.preparingDish) {
+      handleRestaurantClick(t.clientX - rect.left, t.clientY - rect.top);
+      touchStartPos = null; touchIsDrag = false; return;
+    }
+    // Normal tap
+    if (!touchIsDrag) {
+      handleRestaurantClick(t.clientX - rect.left, t.clientY - rect.top);
+    }
+    touchStartPos = null; touchIsDrag = false; return;
+  }
+
+  if (touchIsDrag) { touchStartPos = null; touchIsDrag = false; return; }
+
+  // Treat as tap
   if (GS.scene === 'title') {
     const b = GS._titleBtnBounds;
     if (b && t.clientX >= b.x && t.clientX <= b.x + b.w && t.clientY >= b.y && t.clientY <= b.y + b.h) {
@@ -2827,8 +3413,6 @@ canvas.addEventListener('touchend', e => {
     const mx = (t.clientX - rect.left) + cam.x;
     const my = (t.clientY - rect.top) + cam.y;
     handleFishingClick(mx, my);
-  } else if (GS.scene === 'restaurant') {
-    handleRestaurantClick(t.clientX - rect.left, t.clientY - rect.top);
   }
   touchStartPos = null;
   touchIsDrag = false;
@@ -3116,11 +3700,13 @@ function loop(ts) {
     drawBackground();
     drawDecorations();
 
-    // Draw bubbles — realistic refractive spheres
+    // Draw bubbles — realistic refractive spheres with depth
     for (const b of bubbles) {
-      const rx = b.r, ry = b.ry || b.r;
+      const bz = b.z ?? 0.3;
+      const bScale = depthScale(bz);
+      const rx = b.r * bScale, ry = (b.ry || b.r) * bScale;
       ctx.save();
-      ctx.globalAlpha = b.life * 0.75;
+      ctx.globalAlpha = b.life * 0.75 * (1 - bz * 0.35);
       ctx.translate(b.x, b.y);
       // Outer glow
       const outerG = ctx.createRadialGradient(0, 0, ry * 0.3, 0, 0, rx * 1.4);
@@ -3128,37 +3714,45 @@ function loop(ts) {
       outerG.addColorStop(1, 'rgba(100,180,255,0.06)');
       ctx.fillStyle = outerG;
       ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.4, ry * 1.4, 0, 0, Math.PI * 2); ctx.fill();
-      // Bubble interior — nearly transparent with subtle caustic tint
+      // Bubble interior
       const innerG = ctx.createRadialGradient(-rx * 0.25, -ry * 0.3, 0, 0, 0, rx);
       innerG.addColorStop(0, 'rgba(230,248,255,0.18)');
       innerG.addColorStop(0.6, 'rgba(140,210,255,0.05)');
       innerG.addColorStop(1, 'rgba(80,160,230,0.02)');
       ctx.fillStyle = innerG;
       ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
-      // Rim — thin bright edge (surface tension)
+      // Rim
       ctx.strokeStyle = 'rgba(200,238,255,0.55)';
       ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
-      // Primary specular highlight — upper-left
+      // Specular highlights
       ctx.fillStyle = 'rgba(255,255,255,0.75)';
       ctx.beginPath(); ctx.ellipse(-rx * 0.30, -ry * 0.35, rx * 0.22, ry * 0.14, -0.4, 0, Math.PI * 2); ctx.fill();
-      // Secondary small highlight
       ctx.fillStyle = 'rgba(255,255,255,0.35)';
       ctx.beginPath(); ctx.ellipse(rx * 0.15, -ry * 0.50, rx * 0.09, ry * 0.06, 0.3, 0, Math.PI * 2); ctx.fill();
+      // Depth haze tint
+      const bHaze = depthHazeAlpha(bz);
+      if (bHaze > 0.01) {
+        ctx.globalAlpha = bHaze * 0.6;
+        ctx.fillStyle = GS.zone === 2 ? 'rgba(2,8,20,1)' : 'rgba(8,55,115,1)';
+        ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.05, ry * 1.05, 0, 0, Math.PI * 2); ctx.fill();
+      }
       ctx.restore();
     }
 
-    // Draw particles (立体水花)
+    // Draw particles with depth
     for (const p of particles) {
+      const pz = p.z ?? 0.4;
+      const ps = depthScale(pz) * 5;
       ctx.save();
-      ctx.globalAlpha = p.life;
-      const pG = ctx.createRadialGradient(p.x - 1, p.y - 1, 0, p.x, p.y, 5);
+      ctx.globalAlpha = p.life * (1 - pz * 0.5);
+      const pG = ctx.createRadialGradient(p.x - 1, p.y - 1, 0, p.x, p.y, ps);
       pG.addColorStop(0, 'rgba(255,255,255,0.9)');
       pG.addColorStop(0.4, p.color || '#7ef');
       pG.addColorStop(1, 'rgba(0,150,255,0)');
       ctx.fillStyle = pG;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, ps, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
@@ -3172,17 +3766,16 @@ function loop(ts) {
 
     // Camera follows mouse (PC only) — touch uses direct drag in touchmove
     if (GS.scene === 'fishing' && !touchActive) {
-      // Map mouse from [0,VW] → cam target in [0, currentWW-VW]
-      const normX = mouseScreen.x / VW; // 0..1
+      const normX = mouseScreen.x / VW;
       const normY = mouseScreen.y / VH;
-      camTarget.x = normX * (currentWW - VW);
-      camTarget.y = normY * (currentWH - VH);
+      camTarget.x = normX * Math.max(0, currentWW - VW);
+      camTarget.y = normY * Math.max(0, currentWH - VH);
       cam.x += (camTarget.x - cam.x) * 0.04;
       cam.y += (camTarget.y - cam.y) * 0.04;
     }
     if (GS.scene === 'fishing') {
-      cam.x = Math.max(0, Math.min(Math.max(0, currentWW - VW), cam.x));
-      cam.y = Math.max(0, Math.min(Math.max(0, currentWH - VH), cam.y));
+      cam.x = Math.min(Math.max(0, currentWW - VW), Math.max(0, cam.x));
+      cam.y = Math.min(Math.max(0, currentWH - VH), Math.max(0, cam.y));
     }
 
     // Update diver — auto-wander around the viewport center
