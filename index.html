@@ -613,183 +613,241 @@ function drawBackground() {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, VW, VH);
 
-  // ── Layer 2: Horizontal depth-haze bands ──
+  // ── Layer 2: Horizontal depth-haze bands + chromatic volume scatter ──
   if (GS.zone < 2 && GS.weather !== 'dark') {
-    for (let band = 0; band < 3; band++) {
-      const by = VH * (0.15 + band * 0.25);
-      const bh = ctx.createLinearGradient(0, by - 40, 0, by + 40);
+    // Slowly drifting water color pulse — breathing effect
+    const breathe = 0.5 + Math.sin(t * 0.18) * 0.5;
+    for (let band = 0; band < 4; band++) {
+      const by = cam.y + VH * (0.1 + band * 0.22) + Math.sin(t * 0.12 + band * 1.3) * 30;
+      const bAlpha = (0.028 - band * 0.005) * (0.7 + breathe * 0.3);
+      const bh = ctx.createLinearGradient(0, by - 50, 0, by + 50);
       bh.addColorStop(0, 'rgba(100,210,255,0)');
-      bh.addColorStop(0.5, `rgba(80,190,240,${0.03 - band * 0.008})`);
-      bh.addColorStop(1, 'rgba(60,160,220,0)');
+      bh.addColorStop(0.5, GS.zone === 0
+        ? `rgba(60,185,255,${bAlpha})`
+        : `rgba(40,160,220,${bAlpha})`);
+      bh.addColorStop(1, 'rgba(30,140,200,0)');
       ctx.fillStyle = bh;
-      ctx.fillRect(0, by - 40, VW, 80);
+      ctx.fillRect(cam.x, by - 50, currentWW, 100);
     }
   }
 
   // ── Layer 2b: Surface glow band — bright haze near world y=0 ──
-  // When diving deep, the surface appears as a bright shimmering band above
   if (GS.weather !== 'dark') {
-    const surfScreenY = -cam.y; // surface in screen coords (after translate(-cam.x,-cam.y))
-    const surfBandH = 90;
-    // Only draw if surface is within or just above viewport
+    const surfScreenY = -cam.y;
+    const surfBandH = 110;
     if (surfScreenY > -surfBandH && surfScreenY < VH) {
       ctx.save();
-      // Bright glow directly under the surface
       const sg = ctx.createLinearGradient(0, 0, 0, surfBandH);
-      sg.addColorStop(0,   GS.zone === 0 ? 'rgba(160,240,255,0.30)' : 'rgba(100,200,240,0.20)');
-      sg.addColorStop(0.4, GS.zone === 0 ? 'rgba(80,190,240,0.12)'  : 'rgba(60,160,210,0.10)');
+      sg.addColorStop(0,   GS.zone === 0 ? 'rgba(160,240,255,0.35)' : 'rgba(100,200,240,0.22)');
+      sg.addColorStop(0.35, GS.zone === 0 ? 'rgba(80,200,248,0.15)'  : 'rgba(60,160,210,0.12)');
       sg.addColorStop(1,   'rgba(30,100,180,0)');
       ctx.fillStyle = sg;
       ctx.fillRect(cam.x, 0, currentWW, surfBandH);
 
-      // Animated surface shimmer lines (seen from below)
-      ctx.globalAlpha = 0.18;
-      for (let i = 0; i < 8; i++) {
-        const lx = cam.x + (i * 211 + t * 55) % currentWW;
-        const lw = 18 + Math.sin(t * 1.8 + i) * 10;
-        ctx.fillStyle = 'rgba(220,248,255,1)';
-        ctx.beginPath();
-        ctx.ellipse(lx, 3 + Math.sin(t * 1.2 + i * 0.9) * 4, lw, 2.5, 0, 0, Math.PI * 2);
-        ctx.fill();
+      // Animated refraction shimmer lines — chromatic split (RGB offset)
+      for (let i = 0; i < 14; i++) {
+        const lx = cam.x + (i * 211.7 + t * 70) % currentWW;
+        const ly = 4 + Math.sin(t * 1.4 + i * 0.85) * 5;
+        const lw = 22 + Math.sin(t * 2.1 + i) * 12;
+        const la = 0.12 + Math.sin(t * 1.8 + i * 1.2) * 0.07;
+        ctx.globalAlpha = la;
+        // Red channel offset
+        ctx.fillStyle = 'rgba(255,120,120,1)';
+        ctx.beginPath(); ctx.ellipse(lx - 1.5, ly, lw * 0.9, 2, 0, 0, Math.PI * 2); ctx.fill();
+        // Blue channel offset
+        ctx.fillStyle = 'rgba(120,200,255,1)';
+        ctx.beginPath(); ctx.ellipse(lx + 1.5, ly, lw, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+        // White core
+        ctx.fillStyle = 'rgba(240,255,255,1)';
+        ctx.beginPath(); ctx.ellipse(lx, ly, lw * 0.6, 1.5, 0, 0, Math.PI * 2); ctx.fill();
       }
       ctx.globalAlpha = 1;
       ctx.restore();
     }
   }
 
-  // ── Layer 3: Volumetric god rays from water surface (Tyndall effect) ──
-  // Rays always originate from world y=0 (the surface), fade with depth
+  // ── Layer 3: Volumetric god rays — dual-pass with secondary scatter ──
   if (GS.zone <= 1 && GS.weather !== 'dark') {
     ctx.save();
-    const rayCount = GS.zone === 0 ? 11 : 7;
-    const rayAlpha = GS.zone === 0 ? 0.06 : 0.035;
-    const rayFadeDepth = GS.zone === 0 ? currentWH * 0.55 : currentWH * 0.35;
+    const rayCount = GS.zone === 0 ? 12 : 8;
+    const rayFadeDepth = GS.zone === 0 ? currentWH * 0.60 : currentWH * 0.40;
+
+    // Pass 1: wide soft secondary scatter (blue-tinted)
+    for (let i = 0; i < rayCount; i++) {
+      const baseX = currentWW * (i / rayCount) + currentWW * 0.04;
+      const rx = baseX + Math.sin(t * 0.28 + i * 1.4) * 60;
+      const spread = 90 + Math.sin(t * 0.15 + i * 0.7) * 40;
+      const pulse = 0.5 + Math.sin(t * 0.9 + i * 2.1) * 0.5;
+      const alpha = (GS.zone === 0 ? 0.022 : 0.012) * pulse;
+      const g2 = ctx.createLinearGradient(0, 0, 0, rayFadeDepth * 1.2);
+      g2.addColorStop(0,   `rgba(120,210,255,${alpha * 2})`);
+      g2.addColorStop(0.3, `rgba(80,180,240,${alpha})`);
+      g2.addColorStop(1,   'rgba(30,100,200,0)');
+      ctx.fillStyle = g2;
+      ctx.beginPath();
+      ctx.moveTo(rx - 8, 0); ctx.lineTo(rx + 8, 0);
+      ctx.lineTo(rx + spread, rayFadeDepth * 1.2);
+      ctx.lineTo(rx - spread * 0.8, rayFadeDepth * 1.2);
+      ctx.closePath(); ctx.fill();
+    }
+
+    // Pass 2: sharp bright primary rays (white-cyan)
     for (let i = 0; i < rayCount; i++) {
       const baseX = currentWW * (i / rayCount);
       const rx = baseX + Math.sin(t * 0.35 + i * 1.57) * 45;
-      const spread = 55 + Math.sin(t * 0.22 + i) * 25;
-      // Rays originate from surface (y=0) and fan downward
+      const spread = 40 + Math.sin(t * 0.22 + i) * 20;
+      const pulse = 0.4 + Math.sin(t * 1.1 + i * 1.7) * 0.6; // strong flicker
+      const alpha = (GS.zone === 0 ? 0.075 : 0.04) * pulse;
       const grad2 = ctx.createLinearGradient(0, 0, 0, rayFadeDepth);
-      grad2.addColorStop(0,    `rgba(200,245,255,${rayAlpha * 1.8})`);
-      grad2.addColorStop(0.15, `rgba(160,230,255,${rayAlpha * 1.2})`);
-      grad2.addColorStop(0.45, `rgba(100,190,240,${rayAlpha * 0.5})`);
-      grad2.addColorStop(1,    'rgba(40,120,200,0)');
+      grad2.addColorStop(0,    `rgba(230,250,255,${alpha * 1.6})`);
+      grad2.addColorStop(0.12, `rgba(180,235,255,${alpha * 1.1})`);
+      grad2.addColorStop(0.4,  `rgba(110,200,245,${alpha * 0.5})`);
+      grad2.addColorStop(1,    'rgba(40,130,210,0)');
       ctx.fillStyle = grad2;
       ctx.beginPath();
-      const topW = 5 + Math.sin(t * 0.6 + i) * 2;
-      const sway = Math.sin(t * 0.18 + i) * 18;
-      ctx.moveTo(rx - topW, 0);
-      ctx.lineTo(rx + topW, 0);
+      const topW = 4 + Math.sin(t * 0.7 + i) * 2;
+      const sway = Math.sin(t * 0.22 + i * 0.8) * 22;
+      ctx.moveTo(rx - topW, 0); ctx.lineTo(rx + topW, 0);
       ctx.lineTo(rx + spread + sway, rayFadeDepth);
-      ctx.lineTo(rx - spread * 0.75 + sway, rayFadeDepth);
-      ctx.closePath();
-      ctx.fill();
+      ctx.lineTo(rx - spread * 0.7 + sway, rayFadeDepth);
+      ctx.closePath(); ctx.fill();
     }
     ctx.restore();
   }
 
-  // ── Layer 4: Caustic light patterns (water surface refraction) ──
-  if (GS.zone === 0 && GS.weather !== 'dark') {
+  // ── Layer 4: Caustic light patterns — sharp refractive network ──
+  if (GS.zone <= 1 && GS.weather !== 'dark') {
     ctx.save();
-    // Flowing caustic blobs
-    for (let i = 0; i < 28; i++) {
+    ctx.globalCompositeOperation = 'screen'; // additive blend → bright caustics pop
+
+    const causticCount = GS.zone === 0 ? 38 : 20;
+    const baseAlpha = GS.zone === 0 ? 0.11 : 0.055;
+
+    for (let i = 0; i < causticCount; i++) {
       const seed = i * 137.508;
-      const cx = ((seed + GS.time * 18) % (currentWW + 80)) - 40;
-      const cy = cam.y + 20 + (i % 6) * (VH * 0.14) + Math.sin(GS.time * 0.8 + seed * 0.1) * 22;
-      const r = 14 + Math.sin(GS.time * 1.1 + i * 0.7) * 7;
-      const alpha = (0.04 + Math.sin(GS.time * 1.8 + i) * 0.02) * (1 - (cy - cam.y) / currentWH * 2.5);
-      if (alpha <= 0) continue;
-      const cg = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.25, 0, cx, cy, r);
-      cg.addColorStop(0, `rgba(210,250,255,${alpha * 2.2})`);
-      cg.addColorStop(0.4, `rgba(160,225,250,${alpha})`);
-      cg.addColorStop(1, 'rgba(80,160,220,0)');
+      const cx = cam.x + ((seed * 3.1 + GS.time * (GS.zone === 0 ? 22 : 14)) % (currentWW + 80)) - 40;
+      // Depth-stratified rows
+      const row = i % 7;
+      const cy = cam.y + 15 + row * (VH * 0.13) + Math.sin(GS.time * 0.9 + seed * 0.08) * 28;
+      const depthFade = Math.max(0, 1 - (cy - cam.y) / (VH * 1.1));
+      if (depthFade <= 0) continue;
+
+      const r = 8 + Math.sin(GS.time * 1.4 + i * 0.73) * 5;
+      const squeeze = 0.3 + Math.sin(GS.time * 0.8 + i * 1.1) * 0.2;
+      const rot = GS.time * 0.3 + i * 0.55;
+      const alpha = (baseAlpha + Math.sin(GS.time * 2.2 + i) * baseAlpha * 0.6) * depthFade;
+
+      // Sharp caustic ring (annular shape — bright edge, hollow center)
+      const cg = ctx.createRadialGradient(cx, cy, r * 0.35, cx, cy, r);
+      cg.addColorStop(0,   `rgba(180,245,255,0)`);
+      cg.addColorStop(0.55, `rgba(220,252,255,${alpha * 1.4})`);
+      cg.addColorStop(0.78, `rgba(255,255,240,${alpha * 2.2})`);
+      cg.addColorStop(1,   `rgba(140,220,255,0)`);
       ctx.fillStyle = cg;
       ctx.beginPath();
-      ctx.ellipse(cx, cy, r, r * 0.55, GS.time * 0.25 + i * 0.6, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, r, r * squeeze, rot, 0, Math.PI * 2);
       ctx.fill();
+
+      // Extra bright specular center dot
+      if (alpha > baseAlpha * 0.8) {
+        ctx.fillStyle = `rgba(255,255,255,${alpha * 1.8})`;
+        ctx.beginPath();
+        ctx.arc(cx + Math.sin(rot) * r * 0.2, cy - r * squeeze * 0.3, r * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
+    ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
     ctx.restore();
-  } else if (GS.zone === 1 && GS.weather !== 'dark') {
-    // Coral reef: dimmer caustics
-    ctx.save();
-    for (let i = 0; i < 14; i++) {
-      const seed = i * 97.3;
-      const cx = ((seed + GS.time * 12) % (currentWW + 60)) - 30;
-      const cy = cam.y + 30 + (i % 4) * (VH * 0.22) + Math.sin(GS.time * 0.6 + i) * 18;
-      const r = 18 + Math.sin(GS.time * 0.9 + i) * 8;
-      const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-      cg.addColorStop(0, 'rgba(140,210,240,0.035)');
-      cg.addColorStop(1, 'rgba(80,140,200,0)');
-      ctx.fillStyle = cg;
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, r, r * 0.5, GS.time * 0.2 + i, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
   }
 
-  // ── Layer 5: Bioluminescent particles (deep sea) ──
+  // ── Layer 5: Bioluminescent particles (deep sea) — additive glow ──
   if (isDeep) {
     ctx.save();
-    for (let i = 0; i < 32; i++) {
-      const px = (Math.sin(i * 2.3 + GS.time * 0.08) * 0.5 + 0.5) * currentWW;
-      const py = (Math.sin(i * 1.7 + GS.time * 0.06) * 0.5 + 0.5) * (currentWH - 100) + 40;
-      const pulse = 0.5 + Math.sin(GS.time * 2.5 + i * 0.9) * 0.5;
-      const pr = 1.5 + pulse * 2;
-      const hue = 160 + (i * 23) % 80; // blue-cyan-green range
-      const alpha = 0.3 + pulse * 0.5;
-      // Soft outer glow
-      const glow = ctx.createRadialGradient(px, py, 0, px, py, pr * 7);
-      glow.addColorStop(0, `hsla(${hue},100%,75%,${alpha * 0.9})`);
-      glow.addColorStop(0.3, `hsla(${hue},100%,65%,${alpha * 0.4})`);
-      glow.addColorStop(1, `hsla(${hue},100%,50%,0)`);
+    ctx.globalCompositeOperation = 'screen';
+    for (let i = 0; i < 42; i++) {
+      const px = cam.x + (Math.sin(i * 2.3 + GS.time * 0.07) * 0.5 + 0.5) * currentWW;
+      const py = cam.y + (Math.sin(i * 1.7 + GS.time * 0.055) * 0.5 + 0.5) * VH;
+      const pulse = 0.5 + Math.sin(GS.time * (1.8 + (i % 5) * 0.4) + i * 0.9) * 0.5;
+      const pr = 1.2 + pulse * 2.8;
+      const hue = 160 + (i * 29) % 100; // teal-cyan-green
+      const alpha = 0.25 + pulse * 0.65;
+      // Large soft halo
+      const glow = ctx.createRadialGradient(px, py, 0, px, py, pr * 9);
+      glow.addColorStop(0,   `hsla(${hue},100%,78%,${alpha * 0.85})`);
+      glow.addColorStop(0.25, `hsla(${hue},100%,65%,${alpha * 0.35})`);
+      glow.addColorStop(0.6, `hsla(${hue + 20},90%,50%,${alpha * 0.1})`);
+      glow.addColorStop(1,   `hsla(${hue},100%,40%,0)`);
       ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(px, py, pr * 7, 0, Math.PI * 2);
-      ctx.fill();
-      // Bright core
-      ctx.fillStyle = `hsla(${hue},100%,90%,${alpha})`;
-      ctx.beginPath();
-      ctx.arc(px, py, pr, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.beginPath(); ctx.arc(px, py, pr * 9, 0, Math.PI * 2); ctx.fill();
+      // Inner glow ring
+      const inner = ctx.createRadialGradient(px, py, 0, px, py, pr * 2.5);
+      inner.addColorStop(0, `hsla(${hue + 30},100%,95%,${alpha})`);
+      inner.addColorStop(1, `hsla(${hue},100%,70%,0)`);
+      ctx.fillStyle = inner;
+      ctx.beginPath(); ctx.arc(px, py, pr * 2.5, 0, Math.PI * 2); ctx.fill();
+      // Bright hot core
+      ctx.fillStyle = `hsla(${hue + 40},100%,98%,${Math.min(1, alpha * 1.4)})`;
+      ctx.beginPath(); ctx.arc(px, py, pr * 0.7, 0, Math.PI * 2); ctx.fill();
     }
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
 
-  // ── Layer 6: Suspended particles (marine snow) ──
+  // ── Layer 6: Marine snow — multi-speed depth-layered particles ──
   ctx.save();
-  const particleCount = isDeep ? 40 : isCoral ? 25 : 18;
-  const particleAlpha = isDeep ? 0.3 : 0.18;
+  const particleCount = isDeep ? 55 : isCoral ? 35 : 25;
   for (let i = 0; i < particleCount; i++) {
     const seed = i * 61.8;
-    const px = (seed % currentWW);
-    const drift = Math.sin(GS.time * 0.3 + i * 0.4) * 12;
-    const py = ((seed * 3.7 + GS.time * (8 + (i % 4) * 3)) % currentWH);
-    const ps = 0.8 + (i % 3) * 0.6;
-    ctx.globalAlpha = particleAlpha * (0.5 + Math.sin(GS.time + i) * 0.5);
-    ctx.fillStyle = isDeep ? 'rgba(100,200,255,1)' : 'rgba(200,240,255,1)';
-    ctx.beginPath();
-    ctx.arc(px + drift, py, ps, 0, Math.PI * 2);
-    ctx.fill();
+    // 3 speed layers simulating near/mid/far depth
+    const layer = i % 3; // 0=near fast, 1=mid, 2=far slow
+    const speed = [14, 9, 5][layer];
+    const size  = [1.4, 0.9, 0.5][layer];
+    const alpha = [0.30, 0.18, 0.10][layer];
+    const px = cam.x + ((seed * 7.3) % currentWW);
+    const drift = Math.sin(GS.time * (0.4 - layer * 0.1) + i * 0.55) * (18 - layer * 5);
+    const py = cam.y + ((seed * 4.1 + GS.time * speed) % currentWH);
+    const fade = 0.4 + Math.sin(GS.time * 0.8 + i * 0.7) * 0.4;
+    ctx.globalAlpha = alpha * fade;
+    // Near particles get a tiny glint; far ones are plain white dots
+    if (layer === 0) {
+      const pg = ctx.createRadialGradient(px + drift - size, py - size, 0, px + drift, py, size * 2.5);
+      pg.addColorStop(0, 'rgba(255,255,255,1)');
+      pg.addColorStop(0.4, isDeep ? 'rgba(100,210,255,0.6)' : 'rgba(200,240,255,0.5)');
+      pg.addColorStop(1, 'rgba(120,180,255,0)');
+      ctx.fillStyle = pg;
+      ctx.beginPath(); ctx.arc(px + drift, py, size * 2.5, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.fillStyle = isDeep ? 'rgba(100,200,255,1)' : 'rgba(210,245,255,1)';
+      ctx.beginPath(); ctx.arc(px + drift, py, size, 0, Math.PI * 2); ctx.fill();
+    }
   }
   ctx.globalAlpha = 1;
   ctx.restore();
 
-  // ── Layer 7: Underwater current streaks ──
-  if (GS.weather === 'current') {
+  // ── Layer 7: Underwater current streaks — always present, stronger in current weather ──
+  {
     ctx.save();
-    for (let i = 0; i < 10; i++) {
-      const cx = ((GS.time * 110 + i * 180) % (currentWW + 250)) - 120;
-      const cy = cam.y + 70 + i * 85 + Math.sin(i * 1.4) * 35;
-      const cg = ctx.createLinearGradient(cx - 30, cy, cx + 120, cy);
-      cg.addColorStop(0, 'rgba(120,210,255,0)');
-      cg.addColorStop(0.2, 'rgba(160,230,255,0.14)');
-      cg.addColorStop(0.6, 'rgba(140,220,255,0.09)');
-      cg.addColorStop(1, 'rgba(100,200,255,0)');
+    const streamCount = GS.weather === 'current' ? 16 : 7;
+    const streamAlpha = GS.weather === 'current' ? 1.0 : 0.45;
+    // Two current directions create cross-flow turbulence
+    for (let i = 0; i < streamCount; i++) {
+      const dir = i % 2 === 0 ? 1 : -0.3; // primary + weak counter
+      const speed = (GS.weather === 'current' ? 130 : 55) * dir;
+      const cx = cam.x + ((GS.time * speed + i * 220 + (i % 3) * 600) % (currentWW + 400)) - 200;
+      const cy = cam.y + 40 + i * (VH / streamCount) + Math.sin(GS.time * 0.25 + i * 0.9) * 45;
+      const len = 70 + Math.sin(i * 0.7) * 40;
+      const thick = 4 + Math.sin(i * 1.3) * 2;
+      const alpha = (0.06 + Math.sin(GS.time * 0.5 + i) * 0.04) * streamAlpha;
+      const cg = ctx.createLinearGradient(cx - len * 0.4, cy, cx + len, cy);
+      cg.addColorStop(0,   'rgba(120,210,255,0)');
+      cg.addColorStop(0.15, `rgba(170,235,255,${alpha * 1.6})`);
+      cg.addColorStop(0.55, `rgba(140,220,255,${alpha})`);
+      cg.addColorStop(1,   'rgba(100,195,255,0)');
       ctx.fillStyle = cg;
       ctx.beginPath();
-      ctx.ellipse(cx + 45, cy, 85, 7 + Math.sin(i) * 3, Math.sin(i * 0.5) * 0.08, 0, Math.PI * 2);
+      ctx.ellipse(cx + len * 0.3, cy, len * 0.75, thick, Math.sin(i * 0.4) * 0.06, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
@@ -1400,15 +1458,52 @@ function drawFish(f) {
   const fScale = depthScale(fz);
   const fBlur  = depthBlur(fz);
 
-  // 地面阴影 — scale shadow with depth
-  if (f.y > 400) {
-    const shadowAlpha = Math.max(0, (f.y - 400) / 200) * 0.35 * (1 - fz * 0.6);
+  // ── Motion trail — bioluminescent wake behind fish ──
+  if (!f.trail) f.trail = [];
+  // Record trail point every frame
+  const trailLen = f.type === 'shark' ? 14 : f.type === 'jellyfish' ? 8 : 10;
+  f.trail.push({ x: f.x, y: f.y, t: GS.time });
+  if (f.trail.length > trailLen) f.trail.shift();
+
+  if (f.trail.length > 2 && fz < 0.65) {
     ctx.save();
-    ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
-    ctx.beginPath();
-    ctx.ellipse(f.x, 572 + Math.sin(f.x * 0.04 + GS.time * 0.15) * 6, f.size * fScale * 1.1, f.size * fScale * 0.22, 0, 0, Math.PI * 2);
-    ctx.fill();
+    const trailColor = f.type === 'jellyfish'
+      ? [200, 120, 255]
+      : f.type === 'shark'
+        ? [80, 180, 220]
+        : [60, 200, 255];
+    const trailAlpha = (0.18 - fz * 0.15) * (1 - fz * 0.5);
+    for (let i = 1; i < f.trail.length; i++) {
+      const age = (i / f.trail.length);
+      const a = age * trailAlpha * fScale;
+      const r = f.size * fScale * 0.18 * age;
+      ctx.globalAlpha = a;
+      const tg = ctx.createRadialGradient(f.trail[i].x, f.trail[i].y, 0, f.trail[i].x, f.trail[i].y, r * 2.5);
+      tg.addColorStop(0, `rgba(${trailColor[0]},${trailColor[1]},${trailColor[2]},0.8)`);
+      tg.addColorStop(1, `rgba(${trailColor[0]},${trailColor[1]},${trailColor[2]},0)`);
+      ctx.fillStyle = tg;
+      ctx.beginPath();
+      ctx.arc(f.trail[i].x, f.trail[i].y, r * 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
     ctx.restore();
+  }
+
+  // 地面阴影 — scale shadow with depth, ripple on seabed surface
+  if (f.y > currentWH - 250) {
+    const dist = Math.max(0, currentWH - f.y);
+    const shadowAlpha = Math.max(0, (1 - dist / 250)) * 0.4 * (1 - fz * 0.6);
+    if (shadowAlpha > 0.01) {
+      ctx.save();
+      ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
+      const sx = f.x + Math.sin(GS.time * 0.25 + f.x * 0.03) * 5;
+      const distort = 1 + (1 - dist / 250) * 0.3; // shadow stretches as fish nears bottom
+      ctx.beginPath();
+      ctx.ellipse(sx, currentWH - 18, f.size * fScale * 1.2 * distort, f.size * fScale * 0.20, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
   ctx.save();
@@ -4004,42 +4099,69 @@ function loop(ts) {
     drawBackground();
     drawDecorations();
 
-    // Draw bubbles — realistic refractive spheres with depth
+    // Draw bubbles — photorealistic glass spheres with refraction
     for (const b of bubbles) {
       const bz = b.z ?? 0.3;
       const bScale = depthScale(bz);
-      const rx = b.r * bScale, ry = (b.ry || b.r) * bScale;
+      // Wobble: bubbles deform as they rise (faster = more wobble)
+      const wobbleT = GS.time * 3.5 + (b.phase || b.x * 0.05);
+      const wobbleX = 1 + Math.sin(wobbleT) * 0.07;
+      const wobbleY = 1 - Math.sin(wobbleT) * 0.07;
+      const rx = b.r * bScale * wobbleX;
+      const ry = b.r * bScale * wobbleY;
+      const baseAlpha = b.life * 0.85 * (1 - bz * 0.3);
+
       ctx.save();
-      ctx.globalAlpha = b.life * 0.75 * (1 - bz * 0.35);
+      ctx.globalAlpha = baseAlpha;
       ctx.translate(b.x, b.y);
-      // Outer glow
-      const outerG = ctx.createRadialGradient(0, 0, ry * 0.3, 0, 0, rx * 1.4);
-      outerG.addColorStop(0, 'rgba(180,230,255,0)');
-      outerG.addColorStop(1, 'rgba(100,180,255,0.06)');
+
+      // 1. Outer atmospheric glow (light scattering around bubble)
+      const outerG = ctx.createRadialGradient(0, 0, ry * 0.5, 0, 0, rx * 2.0);
+      outerG.addColorStop(0, 'rgba(140,220,255,0)');
+      outerG.addColorStop(0.6, 'rgba(100,200,255,0.04)');
+      outerG.addColorStop(1,  'rgba(60,160,230,0.0)');
       ctx.fillStyle = outerG;
-      ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.4, ry * 1.4, 0, 0, Math.PI * 2); ctx.fill();
-      // Bubble interior
-      const innerG = ctx.createRadialGradient(-rx * 0.25, -ry * 0.3, 0, 0, 0, rx);
-      innerG.addColorStop(0, 'rgba(230,248,255,0.18)');
-      innerG.addColorStop(0.6, 'rgba(140,210,255,0.05)');
-      innerG.addColorStop(1, 'rgba(80,160,230,0.02)');
+      ctx.beginPath(); ctx.ellipse(0, 0, rx * 2.0, ry * 2.0, 0, 0, Math.PI * 2); ctx.fill();
+
+      // 2. Bubble body — refraction tint (bottom-right brighter = light from top-left)
+      const innerG = ctx.createRadialGradient(-rx * 0.2, -ry * 0.25, 0, rx * 0.15, ry * 0.15, rx * 1.05);
+      innerG.addColorStop(0,   'rgba(215,248,255,0.22)');
+      innerG.addColorStop(0.45,'rgba(120,210,255,0.07)');
+      innerG.addColorStop(0.8, 'rgba(60,160,230,0.04)');
+      innerG.addColorStop(1,   'rgba(30,120,200,0.08)');
       ctx.fillStyle = innerG;
       ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
-      // Rim
-      ctx.strokeStyle = 'rgba(200,238,255,0.55)';
-      ctx.lineWidth = 0.8;
+
+      // 3. Rim light (thin bright ring)
+      ctx.strokeStyle = `rgba(200,242,255,${0.5 + Math.sin(wobbleT * 0.8) * 0.15})`;
+      ctx.lineWidth = Math.max(0.5, rx * 0.08);
       ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
-      // Specular highlights
-      ctx.fillStyle = 'rgba(255,255,255,0.75)';
-      ctx.beginPath(); ctx.ellipse(-rx * 0.30, -ry * 0.35, rx * 0.22, ry * 0.14, -0.4, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.beginPath(); ctx.ellipse(rx * 0.15, -ry * 0.50, rx * 0.09, ry * 0.06, 0.3, 0, Math.PI * 2); ctx.fill();
-      // Depth haze tint
+
+      // 4. Primary specular highlight (top-left bright lune)
+      const hl1G = ctx.createRadialGradient(-rx * 0.28, -ry * 0.32, 0, -rx * 0.22, -ry * 0.25, rx * 0.3);
+      hl1G.addColorStop(0, 'rgba(255,255,255,0.95)');
+      hl1G.addColorStop(0.5, 'rgba(220,248,255,0.5)');
+      hl1G.addColorStop(1, 'rgba(180,235,255,0)');
+      ctx.fillStyle = hl1G;
+      ctx.beginPath(); ctx.ellipse(-rx * 0.28, -ry * 0.32, rx * 0.26, ry * 0.16, -0.5, 0, Math.PI * 2); ctx.fill();
+
+      // 5. Secondary micro highlight (tiny sparkle)
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.beginPath(); ctx.arc(rx * 0.18, -ry * 0.52, rx * 0.07, 0, Math.PI * 2); ctx.fill();
+
+      // 6. Bottom caustic — refracted light patch at bottom of bubble
+      const causticG = ctx.createRadialGradient(rx * 0.1, ry * 0.55, 0, rx * 0.1, ry * 0.55, rx * 0.35);
+      causticG.addColorStop(0, `rgba(180,245,255,${0.15 * baseAlpha})`);
+      causticG.addColorStop(1, 'rgba(100,200,255,0)');
+      ctx.fillStyle = causticG;
+      ctx.beginPath(); ctx.ellipse(rx * 0.1, ry * 0.55, rx * 0.35, ry * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+
+      // 7. Depth haze tint overlay
       const bHaze = depthHazeAlpha(bz);
-      if (bHaze > 0.01) {
-        ctx.globalAlpha = bHaze * 0.6;
-        ctx.fillStyle = GS.zone === 2 ? 'rgba(2,8,20,1)' : 'rgba(8,55,115,1)';
-        ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.05, ry * 1.05, 0, 0, Math.PI * 2); ctx.fill();
+      if (bHaze > 0.02) {
+        ctx.globalAlpha = baseAlpha * bHaze * 0.5;
+        ctx.fillStyle = GS.zone === 2 ? 'rgba(2,8,20,1)' : 'rgba(6,45,100,1)';
+        ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.02, ry * 1.02, 0, 0, Math.PI * 2); ctx.fill();
       }
       ctx.restore();
     }
