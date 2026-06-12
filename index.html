@@ -42,25 +42,54 @@
   }
   #ui { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; }
 
-  /* ── iOS "Add to Home Screen" banner ── */
+  /* ── iOS "Add to Home Screen" fullscreen guide ── */
   #iosInstallBanner {
     display: none;
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 99999;
-    background: rgba(2, 12, 35, 0.97);
-    border-top: 1px solid rgba(80,180,255,0.4);
-    padding: 12px 20px 12px 20px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
-    color: #a0e8ff; font-size: 13px; text-align: center;
-    backdrop-filter: blur(12px);
+    position: fixed; inset: 0; z-index: 99998;
+    background: rgba(1, 8, 25, 0.96);
+    backdrop-filter: blur(16px);
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 0; padding: 0 28px;
+    color: #c8ecff; text-align: center;
     pointer-events: all;
   }
-  #iosInstallBanner .banner-row { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
-  #iosInstallBanner .share-icon { font-size: 20px; }
+  #iosInstallBanner .install-title {
+    font-size: 22px; font-weight: bold; color: #fff;
+    margin-bottom: 10px; letter-spacing: 0.02em;
+  }
+  #iosInstallBanner .install-sub {
+    font-size: 14px; color: rgba(160,220,255,0.75);
+    margin-bottom: 28px; line-height: 1.6;
+  }
+  #iosInstallBanner .install-steps {
+    display: flex; flex-direction: column; gap: 16px;
+    width: 100%; max-width: 320px; margin-bottom: 32px;
+  }
+  #iosInstallBanner .install-step {
+    display: flex; align-items: center; gap: 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(80,180,255,0.25);
+    border-radius: 14px; padding: 12px 16px; text-align: left;
+  }
+  #iosInstallBanner .step-icon { font-size: 28px; flex-shrink: 0; }
+  #iosInstallBanner .step-text { font-size: 14px; line-height: 1.45; color: #d0eeff; }
+  #iosInstallBanner .step-text strong { color: #fff; }
+  #iosInstallBanner .install-arrow {
+    position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    left: 50%; transform: translateX(-50%);
+    font-size: 28px; animation: arrowBounce 1.1s ease-in-out infinite;
+  }
+  @keyframes arrowBounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%       { transform: translateX(-50%) translateY(8px); }
+  }
   #iosInstallBanner .close-btn {
-    position: absolute; top: 10px; right: 14px;
-    background: none; border: none; color: rgba(160,220,255,0.6);
-    font-size: 18px; cursor: pointer; padding: 4px 8px;
-    pointer-events: all;
+    position: fixed; top: calc(env(safe-area-inset-top, 0px) + 14px); right: 18px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 50%; color: rgba(180,220,255,0.7);
+    font-size: 16px; width: 34px; height: 34px;
+    cursor: pointer; pointer-events: all;
+    display: flex; align-items: center; justify-content: center;
   }
 
   /* ── Portrait lock overlay ── */
@@ -157,13 +186,26 @@
   <div class="rotate-icon">📱</div>
   <div>请旋转手机<br>横屏游玩效果更佳</div>
 </div>
-<!-- iOS install prompt -->
+<!-- iOS install guide — fullscreen modal -->
 <div id="iosInstallBanner">
-  <button class="close-btn" onclick="document.getElementById('iosInstallBanner').style.display='none'">✕</button>
-  <div class="banner-row">
-    <span class="share-icon">⬆️</span>
-    <span>点击 <strong>分享</strong> 按钮，选择 <strong>"添加到主屏幕"</strong>，即可全屏横屏游玩 🎮</span>
+  <button class="close-btn" id="installCloseBtn">✕</button>
+  <div class="install-title">🎮 全屏横屏游玩</div>
+  <div class="install-sub">将游戏添加到主屏幕<br>即可获得真正的全屏横屏体验</div>
+  <div class="install-steps">
+    <div class="install-step">
+      <span class="step-icon">⬆️</span>
+      <div class="step-text">点击底部<strong>分享按钮</strong>（方块加箭头）</div>
+    </div>
+    <div class="install-step">
+      <span class="step-icon">➕</span>
+      <div class="step-text">选择<strong>「添加到主屏幕」</strong></div>
+    </div>
+    <div class="install-step">
+      <span class="step-icon">🚀</span>
+      <div class="step-text">从主屏幕启动，即可<strong>全屏横屏</strong>无广告游玩</div>
+    </div>
   </div>
+  <div class="install-arrow">⬇️</div>
 </div>
 <canvas id="gameCanvas"></canvas>
 <div id="ui">
@@ -194,15 +236,15 @@ const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 const IS_STANDALONE = window.navigator.standalone === true; // "Add to Home Screen" mode
 
 // Show iOS install banner if: iOS Safari (not standalone, not already dismissed)
-if (IS_IOS && !IS_STANDALONE && !sessionStorage.getItem('iosBannerDismissed')) {
-  // Delay slightly so page renders first
+if (IS_IOS && !IS_STANDALONE && !localStorage.getItem('iosInstallDismissed')) {
   setTimeout(() => {
     const banner = document.getElementById('iosInstallBanner');
-    if (banner) banner.style.display = 'block';
-  }, 2500);
+    if (banner) banner.style.display = 'flex';
+  }, 1500);
 }
-document.getElementById('iosInstallBanner')?.querySelector('.close-btn')?.addEventListener('click', () => {
-  sessionStorage.setItem('iosBannerDismissed', '1');
+document.getElementById('installCloseBtn')?.addEventListener('click', () => {
+  document.getElementById('iosInstallBanner').style.display = 'none';
+  localStorage.setItem('iosInstallDismissed', '1');
 });
 
 // Try to lock landscape on Android (iOS ignores this, relies on standalone manifest)
