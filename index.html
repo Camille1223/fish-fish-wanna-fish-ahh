@@ -34,7 +34,7 @@
     display: block;
     position: fixed; top: 0; left: 0;
     width: 100vw; height: 100vh;
-    /* iOS standalone: use dvh to account for dynamic viewport */
+    /* dvh fills correctly on iOS Safari 15.4+; falls back to vh on older */
     width: 100dvw; height: 100dvh;
     touch-action: none;
     -webkit-touch-callout: none;
@@ -216,6 +216,27 @@ document.addEventListener('click', tryLockLandscape, { once: true });
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+
+// ── Safari/iOS polyfill: ctx.roundRect not available before iOS 16 ──
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    if (typeof r === 'number') r = [r, r, r, r];
+    else if (!Array.isArray(r)) r = [0, 0, 0, 0];
+    while (r.length < 4) r.push(r[r.length - 1]);
+    const [tl, tr, br, bl] = r.map(v => Math.min(v, Math.min(w / 2, h / 2)));
+    this.moveTo(x + tl, y);
+    this.lineTo(x + w - tr, y);
+    this.arcTo(x + w, y, x + w, y + tr, tr);
+    this.lineTo(x + w, y + h - br);
+    this.arcTo(x + w, y + h, x + w - br, y + h, br);
+    this.lineTo(x + bl, y + h);
+    this.arcTo(x, y + h, x, y + h - bl, bl);
+    this.lineTo(x, y + tl);
+    this.arcTo(x, y, x + tl, y, tl);
+    this.closePath();
+    return this;
+  };
+}
 
 // Viewport size (matches window)
 let VW = window.innerWidth;
