@@ -2,14 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<!-- iOS fullscreen / standalone mode -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="深海捕鱼">
-<meta name="mobile-web-app-capable" content="yes">
-<!-- viewport-fit=cover fills the notch/home-indicator areas -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>深海捕鱼 & 寿司店</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -42,72 +35,21 @@
   }
   #ui { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; }
 
-  /* ── iOS "Add to Home Screen" fullscreen guide ── */
-  #iosInstallBanner {
-    display: none;
-    position: fixed; inset: 0; z-index: 99998;
-    background: rgba(1, 8, 25, 0.96);
-    backdrop-filter: blur(16px);
-    flex-direction: column; align-items: center; justify-content: center;
-    gap: 0; padding: 0 28px;
-    color: #c8ecff; text-align: center;
-    pointer-events: all;
-  }
-  #iosInstallBanner .install-title {
-    font-size: 22px; font-weight: bold; color: #fff;
-    margin-bottom: 10px; letter-spacing: 0.02em;
-  }
-  #iosInstallBanner .install-sub {
-    font-size: 14px; color: rgba(160,220,255,0.75);
-    margin-bottom: 28px; line-height: 1.6;
-  }
-  #iosInstallBanner .install-steps {
-    display: flex; flex-direction: column; gap: 16px;
-    width: 100%; max-width: 320px; margin-bottom: 32px;
-  }
-  #iosInstallBanner .install-step {
-    display: flex; align-items: center; gap: 14px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(80,180,255,0.25);
-    border-radius: 14px; padding: 12px 16px; text-align: left;
-  }
-  #iosInstallBanner .step-icon { font-size: 28px; flex-shrink: 0; }
-  #iosInstallBanner .step-text { font-size: 14px; line-height: 1.45; color: #d0eeff; }
-  #iosInstallBanner .step-text strong { color: #fff; }
-  #iosInstallBanner .install-arrow {
-    position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
-    left: 50%; transform: translateX(-50%);
-    font-size: 28px; animation: arrowBounce 1.1s ease-in-out infinite;
-  }
-  @keyframes arrowBounce {
-    0%, 100% { transform: translateX(-50%) translateY(0); }
-    50%       { transform: translateX(-50%) translateY(8px); }
-  }
-  #iosInstallBanner .close-btn {
-    position: fixed; top: calc(env(safe-area-inset-top, 0px) + 14px); right: 18px;
-    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 50%; color: rgba(180,220,255,0.7);
-    font-size: 16px; width: 34px; height: 34px;
-    cursor: pointer; pointer-events: all;
-    display: flex; align-items: center; justify-content: center;
-  }
-
-  /* ── Portrait lock overlay ── */
+  /* ── Portrait hint overlay ── */
   #rotateHint {
     display: none;
-    position: fixed; inset: 0; z-index: 9999;
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999;
     background: rgba(2, 10, 30, 0.97);
     flex-direction: column; justify-content: center; align-items: center; gap: 20px;
     color: #a0e8ff; font-size: 18px; text-align: center;
   }
   #rotateHint .rotate-icon { font-size: 64px; animation: rotateAnim 1.6s ease-in-out infinite; }
   @keyframes rotateAnim {
-    0%   { transform: rotate(0deg);   }
-    40%  { transform: rotate(90deg);  }
-    60%  { transform: rotate(90deg);  }
-    100% { transform: rotate(0deg);   }
+    0%   { transform: rotate(0deg);  }
+    40%  { transform: rotate(90deg); }
+    60%  { transform: rotate(90deg); }
+    100% { transform: rotate(0deg);  }
   }
-  /* Show overlay only in portrait on mobile */
   @media (max-width: 768px) and (orientation: portrait) {
     #rotateHint { display: flex; }
   }
@@ -186,27 +128,6 @@
   <div class="rotate-icon">📱</div>
   <div>请旋转手机<br>横屏游玩效果更佳</div>
 </div>
-<!-- iOS install guide — fullscreen modal -->
-<div id="iosInstallBanner">
-  <button class="close-btn" id="installCloseBtn">✕</button>
-  <div class="install-title">🎮 全屏横屏游玩</div>
-  <div class="install-sub">将游戏添加到主屏幕<br>即可获得真正的全屏横屏体验</div>
-  <div class="install-steps">
-    <div class="install-step">
-      <span class="step-icon">⬆️</span>
-      <div class="step-text">点击底部<strong>分享按钮</strong>（方块加箭头）</div>
-    </div>
-    <div class="install-step">
-      <span class="step-icon">➕</span>
-      <div class="step-text">选择<strong>「添加到主屏幕」</strong></div>
-    </div>
-    <div class="install-step">
-      <span class="step-icon">🚀</span>
-      <div class="step-text">从主屏幕启动，即可<strong>全屏横屏</strong>无广告游玩</div>
-    </div>
-  </div>
-  <div class="install-arrow">⬇️</div>
-</div>
 <canvas id="gameCanvas"></canvas>
 <div id="ui">
   <div class="hud" id="fishingHud">
@@ -231,35 +152,10 @@
 <button id="diveBtn" style="display:none;" onclick="goDiving()">🤿 再次潜水</button>
 
 <script>
-// ── iOS detection ──
-const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-const IS_STANDALONE = window.navigator.standalone === true; // "Add to Home Screen" mode
-
-// Show iOS install banner if: iOS Safari (not standalone, not already dismissed)
-if (IS_IOS && !IS_STANDALONE && !localStorage.getItem('iosInstallDismissed')) {
-  setTimeout(() => {
-    const banner = document.getElementById('iosInstallBanner');
-    if (banner) banner.style.display = 'flex';
-  }, 1500);
-}
-document.getElementById('installCloseBtn')?.addEventListener('click', () => {
-  document.getElementById('iosInstallBanner').style.display = 'none';
-  localStorage.setItem('iosInstallDismissed', '1');
-});
-
-// Try to lock landscape on Android (iOS ignores this, relies on standalone manifest)
-function tryLockLandscape() {
-  if (!IS_IOS && screen.orientation && screen.orientation.lock) {
-    screen.orientation.lock('landscape').catch(() => {});
-  }
-}
-document.addEventListener('touchstart', tryLockLandscape, { once: true });
-document.addEventListener('click', tryLockLandscape, { once: true });
-
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// ── Safari/iOS polyfill: ctx.roundRect not available before iOS 16 ──
+// ── roundRect polyfill — Safari 15 and below ──
 if (!CanvasRenderingContext2D.prototype.roundRect) {
   CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
     if (typeof r === 'number') r = [r, r, r, r];
@@ -1073,11 +969,11 @@ function applyDepthHaze(z, w, h) {
 
 function drawDecorations() {
   // Sort by z descending so far objects draw first (painter's algorithm)
-  const sorted = [...decorations].sort((a, b) => (b.z ?? 0.5) - (a.z ?? 0.5));
+  const sorted = [...decorations].sort((a, b) => (b.z || 0.5) - (a.z || 0.5));
 
   // 先画阴影 (only for near/mid objects)
   for (const d of sorted) {
-    const dz = d.z ?? 0.5;
+    const dz = d.z || 0.5;
     if (dz > 0.7) continue; // far objects have no readable shadow
     if (d.type === 'rock' || d.type === 'castle' || d.type === 'shipwreck') {
       const ds = depthScale(dz);
@@ -1093,7 +989,7 @@ function drawDecorations() {
   }
 
   for (const d of sorted) {
-    const dz = d.z ?? 0.5;
+    const dz = d.z || 0.5;
     const ds = depthScale(dz);
     const dBlur = depthBlur(dz);
 
@@ -1517,7 +1413,7 @@ function drawShipwreck(x, y) {
 }
 
 function drawFish(f) {
-  const fz = f.z ?? 0.5;
+  const fz = f.z || 0.5;
   const fScale = depthScale(fz);
   const fBlur  = depthBlur(fz);
 
@@ -3890,7 +3786,7 @@ function handleFishingClick(mx, my) {
     const dx = mx - f.x, dy = my - f.y;
     const dist = Math.sqrt(dx*dx + dy*dy);
     // iOS fingers are larger — give generous hit area
-    const touchBonus = (navigator.maxTouchPoints > 0) ? (IS_IOS ? 40 : 30) : 0;
+    const touchBonus = (navigator.maxTouchPoints > 0) ? 40 : 0;
     const hitRadius = f.size + 15 + (GS.upgradeNet ? 15 : 0) + touchBonus;
     if (dist < hitRadius && dist < nearestDist) {
       nearest = f;
@@ -4164,7 +4060,7 @@ function loop(ts) {
 
     // Draw bubbles — photorealistic glass spheres with refraction
     for (const b of bubbles) {
-      const bz = b.z ?? 0.3;
+      const bz = b.z || 0.3;
       const bScale = depthScale(bz);
       // Wobble: bubbles deform as they rise (faster = more wobble)
       const wobbleT = GS.time * 3.5 + (b.phase || b.x * 0.05);
@@ -4231,7 +4127,7 @@ function loop(ts) {
 
     // Draw particles with depth
     for (const p of particles) {
-      const pz = p.z ?? 0.4;
+      const pz = p.z || 0.4;
       const ps = depthScale(pz) * 5;
       ctx.save();
       ctx.globalAlpha = p.life * (1 - pz * 0.5);
