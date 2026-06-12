@@ -3108,7 +3108,11 @@ function drawTitle() {
   ctx.textAlign = 'left';
 
   // ── START BUTTON — ocean glass style ──
-  const btnW = 200, btnH = 52, btnX = VW / 2 - btnW / 2, btnY = VH * 0.56;
+  const btnW = 220, btnH = 58, btnX = VW / 2 - btnW / 2, btnY = VH * 0.56;
+  const hovering = mouseScreen.x >= btnX && mouseScreen.x <= btnX + btnW &&
+                   mouseScreen.y >= btnY && mouseScreen.y <= btnY + btnH;
+  // Store with extra touch padding for easier tap targeting
+  GS._titleBtnBounds = { x: btnX - 16, y: btnY - 14, w: btnW + 32, h: btnH + 28 };
   const hovering = mouseScreen.x >= btnX && mouseScreen.x <= btnX + btnW &&
                    mouseScreen.y >= btnY && mouseScreen.y <= btnY + btnH;
 
@@ -3186,9 +3190,6 @@ function drawTitle() {
   ctx.font = '11px "Georgia", serif';
   ctx.fillText('滑动探索海洋  触屏点击捕鱼  上岸经营寿司店', VW / 2, btnY + btnH + 42);
   ctx.textAlign = 'left';
-
-  // Store button bounds for click detection
-  GS._titleBtnBounds = { x: btnX, y: btnY, w: btnW, h: btnH };
 }
 
 // ============ TRANSITION ============
@@ -3453,15 +3454,19 @@ document.addEventListener('keydown', e => {
 document.addEventListener('keyup', e => keys[e.key] = false);
 
 canvas.addEventListener('mousemove', e => {
-  mouseScreen.x = e.clientX;
-  mouseScreen.y = e.clientY;
+  const rect = canvas.getBoundingClientRect();
+  mouseScreen.x = e.clientX - rect.left;
+  mouseScreen.y = e.clientY - rect.top;
 });
 
 // Left-click to catch fish at cursor position
 canvas.addEventListener('click', e => {
   if (GS.scene === 'title') {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
     const b = GS._titleBtnBounds;
-    if (b && e.clientX >= b.x && e.clientX <= b.x + b.w && e.clientY >= b.y && e.clientY <= b.y + b.h) {
+    if (b && mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
       GS._btnPressT = GS.time;
       startGame();
     }
@@ -3489,8 +3494,11 @@ canvas.addEventListener('touchstart', e => {
   touchActive = true;
   // Press feedback on title button
   if (GS.scene === 'title') {
+    const rect = canvas.getBoundingClientRect();
+    const tx = t.clientX - rect.left;
+    const ty = t.clientY - rect.top;
     const b = GS._titleBtnBounds;
-    if (b && t.clientX >= b.x && t.clientX <= b.x + b.w && t.clientY >= b.y && t.clientY <= b.y + b.h) {
+    if (b && tx >= b.x && tx <= b.x + b.w && ty >= b.y && ty <= b.y + b.h) {
       GS._btnPressT = GS.time;
     }
   }
@@ -3553,7 +3561,9 @@ canvas.addEventListener('touchend', e => {
   // Treat as tap
   if (GS.scene === 'title') {
     const b = GS._titleBtnBounds;
-    if (b && t.clientX >= b.x && t.clientX <= b.x + b.w && t.clientY >= b.y && t.clientY <= b.y + b.h) {
+    const tx = t.clientX - rect.left;
+    const ty = t.clientY - rect.top;
+    if (b && tx >= b.x && tx <= b.x + b.w && ty >= b.y && ty <= b.y + b.h) {
       GS._btnPressT = GS.time;
       startGame();
     }
