@@ -6,62 +6,125 @@
 <title>深海捕鱼 & 寿司店</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Microsoft YaHei', 'Georgia', serif; touch-action: none; user-select: none; -webkit-user-select: none; }
-  #gameCanvas { display: block; cursor: pointer; width: 100vw; height: 100vh; touch-action: none; -webkit-touch-callout: none; }
-  #ui { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #000;
+    overflow: hidden;
+    font-family: 'Microsoft YaHei', 'Georgia', serif;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+  }
+  body {
+    display: flex; justify-content: center; align-items: center;
+    /* Fill safe area on notch phones */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  #gameCanvas {
+    display: block; cursor: pointer;
+    width: 100%; height: 100%;
+    /* Stretch to fill the padded body */
+    position: fixed; top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    touch-action: none; -webkit-touch-callout: none;
+  }
+  #ui { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; }
+
+  /* ── Portrait lock overlay ── */
+  #rotateHint {
+    display: none;
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(2, 10, 30, 0.97);
+    flex-direction: column; justify-content: center; align-items: center; gap: 20px;
+    color: #a0e8ff; font-size: 18px; text-align: center;
+  }
+  #rotateHint .rotate-icon { font-size: 64px; animation: rotateAnim 1.6s ease-in-out infinite; }
+  @keyframes rotateAnim {
+    0%   { transform: rotate(0deg);   }
+    40%  { transform: rotate(90deg);  }
+    60%  { transform: rotate(90deg);  }
+    100% { transform: rotate(0deg);   }
+  }
+  /* Show overlay only in portrait on mobile */
+  @media (max-width: 768px) and (orientation: portrait) {
+    #rotateHint { display: flex; }
+  }
 
   /* ── Top HUD bar ── */
-  .hud { position: absolute; top: env(safe-area-inset-top, 8px); left: 0; right: 0; display: flex; flex-wrap: wrap; align-items: center; padding: 6px 10px; gap: 5px; }
+  .hud {
+    position: absolute;
+    top: env(safe-area-inset-top, 6px);
+    left: env(safe-area-inset-left, 0px);
+    right: env(safe-area-inset-right, 0px);
+    display: flex; flex-wrap: wrap; align-items: center;
+    padding: 4px 8px; gap: 4px;
+  }
   .hud-item {
     background: rgba(2,15,40,0.78);
     border: 1px solid rgba(80,180,255,0.35);
     border-top: 1px solid rgba(140,220,255,0.5);
-    border-radius: 10px;
-    padding: 5px 10px;
+    border-radius: 8px;
+    padding: 3px 8px;
     color: #b8e8ff;
-    font-size: 12px;
+    font-size: 11px;
     backdrop-filter: blur(8px);
-    min-height: 34px;
-    display: inline-flex;
-    align-items: center;
+    min-height: 28px;
+    display: inline-flex; align-items: center;
     white-space: nowrap;
     box-shadow: 0 2px 12px rgba(0,80,160,0.35), inset 0 1px 0 rgba(160,230,255,0.12);
   }
+  /* Landscape: HUD on one row, slightly smaller */
+  @media (orientation: landscape) {
+    .hud { padding: 3px 6px; gap: 3px; }
+    .hud-item { font-size: 10px; padding: 2px 7px; min-height: 24px; }
+    .oxygen-bar { width: 60px !important; }
+  }
 
-  /* ── Shore / Dive action button — fixed bottom center ── */
+  /* ── Shore / Dive action button ── */
   #shoreBtn, #diveBtn {
     position: fixed;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
     left: 50%;
     transform: translateX(-50%);
-    pointer-events: all;
-    cursor: pointer;
+    pointer-events: all; cursor: pointer;
     background: rgba(2,15,40,0.88);
     border: 1.5px solid rgba(200,240,255,0.5);
     border-top: 1.5px solid rgba(220,248,255,0.75);
     border-radius: 24px;
-    padding: 10px 28px;
+    padding: 9px 26px;
     color: #dff4ff;
-    font-size: 16px;
+    font-size: 15px;
     font-family: 'Microsoft YaHei', 'Georgia', serif;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 20px rgba(0,120,220,0.4), inset 0 1px 0 rgba(200,240,255,0.15);
-    white-space: nowrap;
-    z-index: 10;
+    white-space: nowrap; z-index: 10;
     transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  /* Landscape: smaller padding so button doesn't eat screen height */
+  @media (orientation: landscape) {
+    #shoreBtn, #diveBtn {
+      padding: 6px 22px; font-size: 13px;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+    }
   }
   #shoreBtn:hover { box-shadow: 0 4px 28px rgba(0,160,255,0.6); border-color: rgba(160,230,255,0.8); }
   #diveBtn { border-color: rgba(100,210,255,0.55); color: #a0e8ff; box-shadow: 0 4px 20px rgba(0,150,255,0.35), inset 0 1px 0 rgba(140,220,255,0.15); }
   #diveBtn:hover { box-shadow: 0 4px 28px rgba(0,180,255,0.65); }
 
-  .oxygen-bar { width: 80px; height: 10px; background: rgba(0,0,0,0.5); border-radius: 6px; overflow: hidden; border: 1px solid rgba(80,180,255,0.4); }
+  .oxygen-bar { width: 80px; height: 9px; background: rgba(0,0,0,0.5); border-radius: 6px; overflow: hidden; border: 1px solid rgba(80,180,255,0.4); }
   .oxygen-fill { height: 100%; background: linear-gradient(90deg, #0080cc, #00c8e8, #40f0d0); border-radius: 6px; transition: width 0.3s; box-shadow: 0 0 8px rgba(0,200,240,0.7); }
 
-  #msgBox { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) translateY(-40px); background: rgba(2,12,35,0.90); border: 1px solid rgba(80,180,255,0.5); border-top: 1px solid rgba(140,220,255,0.7); border-radius: 14px; padding: 10px 28px; color: #cce8ff; font-size: 16px; display: none; text-align: center; pointer-events: none; box-shadow: 0 6px 28px rgba(0,100,220,0.5), inset 0 1px 0 rgba(180,230,255,0.1); max-width: 90vw; backdrop-filter: blur(10px); }
+  #msgBox { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) translateY(-40px); background: rgba(2,12,35,0.90); border: 1px solid rgba(80,180,255,0.5); border-top: 1px solid rgba(140,220,255,0.7); border-radius: 14px; padding: 9px 24px; color: #cce8ff; font-size: 15px; display: none; text-align: center; pointer-events: none; box-shadow: 0 6px 28px rgba(0,100,220,0.5), inset 0 1px 0 rgba(180,230,255,0.1); max-width: 88vw; backdrop-filter: blur(10px); }
   #sharkHint { position: fixed; top: 45%; left: 50%; transform: translateX(-50%); color: #ffee44; font-size: 14px; font-weight: bold; display: none; text-shadow: 0 0 16px rgba(255,160,0,0.9), 0 0 6px rgba(255,80,0,0.6); pointer-events: none; }
 </style>
 </head>
 <body>
+<!-- Rotate to landscape hint — shown via CSS media query in portrait on mobile -->
+<div id="rotateHint">
+  <div class="rotate-icon">📱</div>
+  <div>请旋转手机<br>横屏游玩效果更佳</div>
+</div>
 <canvas id="gameCanvas"></canvas>
 <div id="ui">
   <div class="hud" id="fishingHud">
@@ -86,6 +149,17 @@
 <button id="diveBtn" style="display:none;" onclick="goDiving()">🤿 再次潜水</button>
 
 <script>
+// Try to lock landscape on first user interaction (required by browsers)
+function tryLockLandscape() {
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('landscape').catch(() => {});
+  }
+  document.removeEventListener('touchstart', tryLockLandscape);
+  document.removeEventListener('click', tryLockLandscape);
+}
+document.addEventListener('touchstart', tryLockLandscape, { once: true });
+document.addEventListener('click', tryLockLandscape, { once: true });
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -3042,7 +3116,10 @@ function drawTitle() {
   ctx.restore();
 
   // ── TITLE TEXT — cinematic ocean style ──
-  const titleY = VH * 0.20;
+  const isLand = VW > VH;
+  const titleFontSize = isLand ? 40 : 54;
+  const titleY = isLand ? VH * 0.18 : VH * 0.20;
+  const titleLineH = isLand ? 48 : 62;
   ctx.textAlign = 'center';
 
   // Outer glow halo
@@ -3050,17 +3127,17 @@ function drawTitle() {
   ctx.shadowColor = 'rgba(80,200,255,0.6)';
   ctx.shadowBlur = 55;
   ctx.fillStyle = 'rgba(80,200,255,0.12)';
-  ctx.font = 'bold 54px "Georgia", serif';
+  ctx.font = `bold ${titleFontSize}px "Georgia", serif`;
   ctx.fillText('FISH FISH', VW / 2, titleY);
-  ctx.fillText('WANNA FISH', VW / 2, titleY + 62);
+  ctx.fillText('WANNA FISH', VW / 2, titleY + titleLineH);
   ctx.restore();
 
   // Dark depth shadow
   ctx.save();
   ctx.fillStyle = 'rgba(0,15,40,0.75)';
-  ctx.font = 'bold 54px "Georgia", serif';
+  ctx.font = `bold ${titleFontSize}px "Georgia", serif`;
   ctx.fillText('FISH FISH', VW / 2 + 3, titleY + 4);
-  ctx.fillText('WANNA FISH', VW / 2 + 3, titleY + 66);
+  ctx.fillText('WANNA FISH', VW / 2 + 3, titleY + titleLineH + 4);
   ctx.restore();
 
   // Main title with ocean-shimmer gradient
@@ -3072,16 +3149,16 @@ function drawTitle() {
   titleGrad.addColorStop(0.75, '#60c8f0');
   titleGrad.addColorStop(1,    '#a0e8ff');
   ctx.fillStyle = titleGrad;
-  ctx.font = 'bold 54px "Georgia", serif';
+  ctx.font = `bold ${titleFontSize}px "Georgia", serif`;
   ctx.fillText('FISH FISH', VW / 2, titleY);
-  ctx.fillText('WANNA FISH', VW / 2, titleY + 62);
+  ctx.fillText('WANNA FISH', VW / 2, titleY + titleLineH);
   ctx.restore();
 
   // Subtitle
   ctx.save();
   ctx.fillStyle = 'rgba(160,225,255,0.85)';
-  ctx.font = '16px "Georgia", serif';
-  ctx.fillText('深海捕鱼  ✦  寿司经营', VW / 2, titleY + 96);
+  ctx.font = `${isLand ? 13 : 16}px "Georgia", serif`;
+  ctx.fillText('深海捕鱼  ✦  寿司经营', VW / 2, titleY + titleLineH + (isLand ? 28 : 34));
   ctx.restore();
 
   // Shimmering water caustic overlay on title
@@ -3108,7 +3185,11 @@ function drawTitle() {
   ctx.textAlign = 'left';
 
   // ── START BUTTON — ocean glass style ──
-  const btnW = 220, btnH = 58, btnX = VW / 2 - btnW / 2, btnY = VH * 0.56;
+  const isLandscape = VW > VH;
+  const btnW = isLandscape ? 200 : 220;
+  const btnH = isLandscape ? 46 : 58;
+  const btnX = VW / 2 - btnW / 2;
+  const btnY = isLandscape ? VH * 0.68 : VH * 0.56;
   const hovering = mouseScreen.x >= btnX && mouseScreen.x <= btnX + btnW &&
                    mouseScreen.y >= btnY && mouseScreen.y <= btnY + btnH;
   // Store with extra touch padding for easier tap targeting
@@ -3183,12 +3264,12 @@ function drawTitle() {
 
   // KEY HINT — below button
   ctx.fillStyle = 'rgba(160,220,255,0.55)';
-  ctx.font = '12px "Georgia", serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('CLICK  /  TAP  /  SPACE  /  ENTER', VW / 2, btnY + btnH + 24);
-  ctx.fillStyle = 'rgba(120,190,230,0.45)';
   ctx.font = '11px "Georgia", serif';
-  ctx.fillText('滑动探索海洋  触屏点击捕鱼  上岸经营寿司店', VW / 2, btnY + btnH + 42);
+  ctx.textAlign = 'center';
+  ctx.fillText('CLICK  /  TAP  /  SPACE  /  ENTER', VW / 2, btnY + btnH + 20);
+  ctx.fillStyle = 'rgba(120,190,230,0.45)';
+  ctx.font = '10px "Georgia", serif';
+  ctx.fillText('滑动探索海洋  触屏点击捕鱼  上岸经营寿司店', VW / 2, btnY + btnH + 36);
   ctx.textAlign = 'left';
 }
 
